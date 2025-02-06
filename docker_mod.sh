@@ -23,8 +23,8 @@ if [[ -n "$container" || "$INCONTAINER" == "true" ]]; then
   declare -r STATUS_FILE="/status_file"
   declare -r DOWNLOAD_DIR="/audible_dl"
   declare -r DEST_BASE_DIR="/audiobooks_dest"
-  declare -r DEBUG_USEAAXSAMPLE=/sample.aax
-  declare -r DEBUG_USEAAXCSAMPLE=/sample.aaxc
+  declare -r DEBUG_USEAAXSAMPLE="sample.aax"
+  declare -r DEBUG_USEAAXCSAMPLE="sample.aaxc"
 
   METADATA_TIKA=tika-app-2.9.2.jar
 else
