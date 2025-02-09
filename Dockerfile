@@ -1,6 +1,6 @@
 FROM alpine:latest
 
-RUN apk add --no-cache bash jq xxd mediainfo ffmpeg parallel curl openjdk21-jre tzdata coreutils sed python3 py3-pip && ln -sf python3 /usr/bin/python
+RUN apk add --no-cache bash jq xxd mediainfo ffmpeg parallel curl openjdk21-jre tzdata coreutils sed python3 py3-pip bc && ln -sf python3 /usr/bin/python
 ENV PYTHONUNBUFFERED=1
 RUN apk add --update --no-cache git python3 py3-pip && ln -sf python3 /usr/bin/python
 RUN pip3 install --break-system-packages --no-cache --upgrade pip setuptools
