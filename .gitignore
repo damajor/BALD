@@ -11,7 +11,9 @@ tmp/
 misc/
 .vscode/
 audible-cli/
+wishlist*
 *.dm
+TODO
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
