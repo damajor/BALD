@@ -93,15 +93,22 @@ In case of a problem please open an issue on GitHub <https://github.com/damajor/
  - crontab friendly (delta runs)
  - library history downloads (full & deltas)
  - wishlist download
+ - either one of:
+   - keep original chapters,
+   - chapters renaming,
+   - or rebuild entirely all chapters
  - metadata enrichment (from normal & hidden AAX/AAXC tags, or from history TSV file)
  - cover art embedding
  - audiobooks conversion to **oga** (Ogg container with Opus codec)
- - custom bit rate for size control (96k ~2/3 of original size, 64k ~1/2 of original size, etc.)
- - parallelization of heavy work (conversion & metadata extraction)
+ - size control of converted audiobooks:
+   - custom fixed bitrate
+   - dynamic bitrate based on a user ratio
+ - parallelization of heavy work (conversion & metadata enrichment)
  - "perfect" embedded metadata for AudioBookShelf ([AudioBookShelf](https://github.com/advplyr/audiobookshelf))
  - dynamic naming scheme for destination directories & file names
  - helper script for downloading external scripts
  - container Dockerfile provided with all dependencies & external scripts (tested on Podman rootless)
+ - and more...
 
 # Pre-requisites
 
@@ -113,6 +120,7 @@ In case of a problem please open an issue on GitHub <https://github.com/damajor/
 
  - bash (v4.3+)
  - jq
+ - bc
  - xxd (for ogg image blobber script)
  - audible-cli (at least version 0.3.2b3)
  - ffmpeg / ffprobe (tested 6.1.2 & 7.1)
@@ -138,6 +146,7 @@ Or
 - `BALD.sh` it is the main script with all the processing logic.
 - `grab_additional_scripts.sh` a quick and dirty script for lazy boys. It will download external scripts and optional tool for you, as well creating a user config file with default values (just remove `myconfig` if you want to set parameters in the script itself).
 - `docker_mod.sh` not to be used directly by the user, it is sourced by the main script to make it compatible with containers.
+- `rebuild_chapters.sh` used to build `ffmpeg` chapters metadata
 - `Dockerfile` used to build your own container image.
 - `compose.yaml` example of for Podman/Docker compose.
 - `README.md` the file you are currently reading.
@@ -154,9 +163,14 @@ It is as simple as:
 `./grab_additional_scripts.sh`  
 3. Carefully configure all settings in `myconfig` or directly inside the script
 
+> **Note:**  
+> The script is not compatible with NTFS filesystem.
+
 # Usage examples
 
 Double check prerequisites and settings :)
+
+BALD was designed to run every day at most.
 
 ## Manual run
 
@@ -176,7 +190,7 @@ Upcoming runs will only download new books from Audible (delta run) and process 
 
 ## Automatic run (crontab)
 
-It is recommended to NOT run it every hour, it works better with a daily scheduling or more like every week or month.
+It is recommended to run the script daily at most. It works better with a daily scheduling or more like every week or month.
 
 > **Example:**  
 > Run every day at 4PM  
@@ -339,11 +353,11 @@ Location of the downloaded library history files. Those files are TSV files cont
 
 > **Snapshot of what it looks:**
 > ```
-> 2024-02-01T00:00:00_library_full.tsv
-> 2024-02-01T00:00:00_library_new.tsv
-> 2024-03-01T00:00:00_library_full.tsv
-> 2024-03-01T00:00:00_library_new.tsv
-> 2024-04-01T00:00:00_library_full.tsv
+> 2024-02-01_library_full.tsv
+> 2024-02-01_library_new.tsv
+> 2024-03-01_library_full.tsv
+> 2024-03-01_library_new.tsv
+> 2024-04-01_library_full.tsv
 > ```
 
 > **Example config:**  
@@ -366,11 +380,11 @@ Allowed values:
 
 ### STATUS_FILE
 
-This is the full path and filename where the script stores its last execution time.
+This is the full path and filename where the script stores the two last execution times.
 The next run will use the last execution time to download only new audiobooks.
 **If you want to force a full sync, delete the file and run again.**
 
-The status file stores the complete date of the script's last execution (the date is formulated as `+%Y-%m-%dT%H:%M:%S`).
+The status file stores the complete date of the script's last execution (the date is formulated as `+%Y-%m-%d`).
 
 > **Example config:**  
 > `STATUS_FILE=$HOME/Audible/audible_last_sync`
@@ -531,6 +545,29 @@ Allowed values:
 > **Example config:**  
 > `METADATA_SINGLENAME_AUTHORS=false`
 
+### METADATA_SKIP_IFEXISTS
+
+This flag allows the script to skip current metadata processing if the final metadata final is already present.
+
+Allowed values:  
+- 'true'
+- 'false'
+
+> **Example config (default value):**  
+> `METADATA_SKIP_IFEXISTS=false`
+
+### METADATA_CHAPTERS
+
+Behavior of the script while processing audiobook chapters.
+
+Possible values are:
+- 'keep' => do not modify chapters, keep the chapters defined in the AAX/AAXC files
+- 'updatetitles' => only try to update chapter titles with the python helper script
+- 'rebuild' => fully rebuild all the chapters based on Audible chapters.json file
+
+> **Example config (default value):**  
+> `METADATA_CHAPTERS=rebuild`
+
 ## Conversion settings
 
 ### CONVERT_BITRATE
@@ -543,17 +580,39 @@ Allowed values: any string that can be parsed by `ffmpeg` (ex: 96k, 128k, etc.)
 > **Example config:**  
 > `CONVERT_BITRATE=96k`
 
+### CONVERT_BITRATE_RATIO
+
+This setting delegates to the script the calculation of the target bitrates of all converted files.
+
+Allowed values:  
+- 'false' => disable this feature and use only fixed bitrate
+- or a ratio like 1/2, 1/3, 2/3 etc.... 
+
+> **Example config:**  
+> `CONVERT_BITRATE_RATIO=2/3`
+
 ### CONVERT_PARALLEL
 
 Parallelization setting for file conversion. This parameter allows the user to specify the number of jobs for audiobook conversion.
 This is entirely independent of METADATA_PARALLEL.
 
-Optimal setting depends on how many cores and memory you have.
+Optimal setting depends on how many cores and memory you have. Usually `ffmpeg` takes 1 to 2 threads and ~800 MB of memory per encoding process.
 
 Allowed values: any number >= 1
 
 > **Example config:**  
 > `CONVERT_PARALLEL=3`
+
+### CONVERT_SKIP_IFOGAEXISTS
+
+If an audiobook was previously converted but not moved to target library, it may be still present in download directory, this flag tells the script to skip conversion of such Audiobooks.
+
+Allowed values:  
+- 'true'  
+- 'false' or anything else
+
+> **Example config:**  
+> `CONVERT_SKIP_IFOGAEXISTS=false`
 
 ### CONVERT_DECRYPTONLY
 
@@ -772,8 +831,7 @@ Keep all settings below to `false` for normal behavior.
 
 #### DEBUG
 
-Global debug flag, enable stepped updates and other debug features.
-Requires [STATUS_FILE](#status_file) exists and populated.
+Global debug flag, also change behavior while moving files to target directory, instead files are copied.
 
 Allowed values:  
 - 'true'  
@@ -798,6 +856,7 @@ Allowed values:
 
 When DEBUG is enabled and STATUS_FILE contains an old date, this setting only increments the STATUS_FILE date with the specified period of time.
 This allows manual stepped runs over specified time periods.
+Requires [STATUS_FILE](#status_file) exists and populated.
 
 Allowed values:  
 - '1 month'  

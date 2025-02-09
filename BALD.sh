@@ -38,14 +38,18 @@ DOWNLOAD_WISHLIST=false           # Wishlist is downloaded in HIST_LIB_DIR
 DOWNLOAD_JOBS=2                   # (disabled for now) 1 less errors, 2 seems good, higher is hazardous
 DOWNLOAD_RETRIES=3                # Careful of not hammering Amazon servers by keeping this param low
 DOWNLOAD_DIR=$HOME/Audible/MyDownloads # AAX & AAXC Audible files will be downloaded here
-METADATA_PARALLEL=3               # Number of parallel jobs for metadata workload >= 1 (1 to do sequential conversion)
+METADATA_PARALLEL=4               # Number of parallel jobs for metadata workload >= 1 (1 to do sequential conversion)
 METADATA_SOURCE=all               # 'aax' (source metadata from aax or aaxc) or 'all' (metadata from every possible sources)
 METADATA_TIKA=http://tikahost:9998 # Tika http url without trailing slash short timeouts (1 sec for validation, 2s for lang detection)
 METADATA_CLEAN_AUTHOR_PATTERN='*' # Read README.md
 METADATA_SINGLENAME_AUTHORS=true  # Keep single name authors or not
-CONVERT_BITRATE=96k               # Bit rate for audio conversion
-CONVERT_PARALLEL=3                # Number of parallel jobs for conversion >= 1 (1 to do sequential conversion)
+METADATA_SKIP_IFEXISTS=false      # Skip metadata processing if AAXFILE_metadata_new exists
+METADATA_CHAPTERS=rebuild         # keep (keep aax chapters) / updatetitles (use python, may fail) / rebuild (recreate chapters)
+CONVERT_BITRATE=96k               # Bitrate for audio conversion
+CONVERT_BITRATE_RATIO=2/3         # Bitrate ratio from original bitrate (false to disable and always use CONVERT_BITRATE)
+CONVERT_PARALLEL=4                # Number of parallel jobs for conversion >= 1 (1 to do sequential conversion)
 CONVERT_DECRYPTONLY=false         # Only decrypt AAX/AAXC files (no additional metadata inserted, no conversion, just pure copy)
+CONVERT_SKIP_IFOGAEXISTS=false    # Skip OGA exists
 DEST_BASE_DIR=$HOME/AudioBookShelf/audiobooks  # Directory for converted files (will be created if it doesnt exist)
 DEST_DIR_NAMING_SCHEME_AUDIOBOOK=(artist series)                  # Read README.md
 DEST_BOOKDIR_NAMING_SCHEME_AUDIOBOOK=(series-part "% - " title)   # Read README.md
@@ -63,7 +67,9 @@ DEST_COPY_ANNOT_FILE=true         # Copy annotations json file
 KEEP_DOWNLOADS=true               # Keep original files in download dir
 CLEAN_TMPLOGS=false               # Delete logs genrated for the current run (old ones are kept)
 # Parameters below are for debugging purposes (default for all bool params is 'false')
-DEBUG=false                       # Manual debug & stepped updates (only works if STATUS_FILE does already exist)
+DEBUG=false                       # Manual debug
+DEBUG_REPEAT_LAST_RUN=false       # TODO More doc
+DEBUG_STEPPED_RUN=false           # TODO Debug with stepped updates (only works if STATUS_FILE does already exist)
 DEBUG_DONT_UPDATE_LASTRUN=false   # Update status file or not
 DEBUG_SKIPDOWNLOADS=false         # true: Disable ALL downloads, false or any other value: normal behavior
 DEBUG_SKIPBOOKCONVERT=false       # true: Disable audiobooks conversion, false or any other value: normal behavior
@@ -73,7 +79,7 @@ DEBUG_DONTEMBEDCOVER=false        # Do not embed cover jpg in metadata
 DEBUG_METADATA=false              # extract metadata from converted file with ffprobe
 DEBUG_USEAAXSAMPLE=false          # AAX sample file to be encoded instead of big Audiobook (fast convert) (false to disable)
 DEBUG_USEAAXCSAMPLE=false         # AAXC sample file (false to disable) dont forget to put 'sample.voucher' in same dir
-DEBUG_STEP="1 month"              # "1 month" "1 week" "1 day" etc. (require DEBUG=true)
+DEBUG_STEP="1 month"              # TODO "1 month" "1 week" "1 day" (require DEBUG_STEPPED_RUN=true)
 #### End of user config
 #########################################################################################################################
 #### Source docker_mod.sh for container execution safety
@@ -160,11 +166,6 @@ ACTIVATION_BYTES=$(jq -r .activation_bytes ~/.audible/${AUDIBLECLI_PROFILE}.json
 [[ -z "$ACTIVATION_BYTES" || "$ACTIVATION_BYTES" == "null" ]] && ACTIVATION_BYTES=$(audible activation-bytes | tail -1)
 # Exit early if activation-bytes is not set
 [[ -z "$ACTIVATION_BYTES" || "$ACTIVATION_BYTES" == "null" ]] && (echo ">> ERROR Cannot get 'activation-bytes'"; exit 255)
-LAST_RUN=$(cat "${STATUS_FILE}" 2>/dev/null)
-# Last synchronization options (with force full sync on first run)
-# Create "audible_last_sync" manually if you want to avoid full sync
-LAST_SYNC_OPT=(--start-date "$LAST_RUN")
-[[ -z "$LAST_RUN" ]] && LAST_SYNC_OPT=()
 DOWNLOAD_PDF_OPT=""
 [[ "$DOWNLOAD_PDF" == "true" ]] && DOWNLOAD_PDF_OPT="--pdf"
 DOWNLOAD_ANNOT_OPT=""
@@ -174,14 +175,37 @@ if [[ "$DOWNLOAD_COVERS" == "true" ]]; then
   IFS=" " read -r -a tmp <<< "${DOWNLOAD_COVERS_SIZE[@]/#/--cover-size }"
   DOWNLOAD_COVERS_OPT=(--cover "${tmp[@]}")
 fi
-if [[ "$DEBUG" == "true" ]]; then
-  NOW=$(date -d "$(date -d "$LAST_RUN" +%Y-%m-%d) + ${DEBUG_STEP}" +%Y-%m-%dT%H:%M:%S)
-  LAST_SYNC_OPT+=(--end-date "${NOW}")
-  echo "### DEBUG: Start date => $LAST_RUN"
-  echo "### DEBUG: End date   => $NOW"
+LAST_RUN=$(tail -n 1 "${STATUS_FILE}" 2>/dev/null)
+# Last synchronization options (with force full sync on first run)
+# Create "audible_last_sync" manually if you want to avoid full sync
+LAST_SYNC_OPT=(--start-date "$LAST_RUN")
+if [[ "$DEBUG_STEPPED_RUN" == "true" ]]; then
+  if [[ "$DEBUG_STEP" == "1 month" || "$DEBUG_STEP" == "1 week" || "$DEBUG_STEP" == "1 day" ]]; then
+    NOW=$(date -d "$(date -d "$LAST_RUN" +%Y-%m-%d) + ${DEBUG_STEP}" +%Y-%m-%d)
+    LAST_SYNC_OPT+=(--end-date "${NOW}")
+    echo "### DEBUG STEP: Start date => $LAST_RUN"
+    echo "### DEBUG STEP: End date   => $NOW"
+  fi
+elif [[ "$DEBUG_REPEAT_LAST_RUN" == "true" ]]; then
+    LAST_RUN=$(head -n 1 "${STATUS_FILE}" 2>/dev/null)
+    NOW=$(tail -n 1 "${STATUS_FILE}" 2>/dev/null)
+    [[ "$LAST_RUN" == "$NOW" ]] && LAST_RUN=""
+    LAST_SYNC_OPT=()
+    [[ -n "$LAST_RUN" ]] && LAST_SYNC_OPT+=(--start-date "$LAST_RUN")
+    [[ -n "$NOW" ]] && LAST_SYNC_OPT+=(--end-date "$NOW")
+    echo "### DEBUG REPEAT: Start date => $LAST_RUN"
+    echo "### DEBUG REPEAT: End date   => $NOW"
 else
-  NOW=$(date +%Y-%m-%dT%H:%M:%S)
+  NOW=$(date +%Y-%m-%d)
 fi
+if [[ "$LAST_RUN" == "$NOW" ]]; then
+  LAST_RUN=$(head -n 1 "${STATUS_FILE}" 2>/dev/null)
+  LAST_SYNC_OPT=(--start-date "$LAST_RUN" --end-date "${NOW}T23:59:59Z")
+fi
+# Full sync
+[[ -z "$LAST_RUN" ]] && LAST_SYNC_OPT=()
+[[ "$DEBUG" == "true" || "$DEBUG_REPEAT_LAST_RUN" == "true" || "$DEBUG_STEPPED_RUN" == "true" ]] && echo "### DEBUG: LAST_SYNC_OPT ${LAST_SYNC_OPT[*]}"
+# Make working dirs
 mkdir -p "$SCRIPT_DIR/tmp"
 mkdir -p "$HIST_LIB_DIR"
 mkdir -p "$DEST_BASE_DIR"
@@ -215,7 +239,7 @@ if [[ "$DEBUG_SKIPDOWNLOADS" != "true" ]]; then
   # Workaround to clean podcasts or unwanted audiobooks, waiting for fix in audible-cli (https://github.com/mkb79/audible-cli/issues/218)
   # Discard all entries not in the requested time range + discard entries with no duration
   head -n 1 "$SCRIPT_DIR/tmp/${NOW}_library_new.tsv" > "$HIST_LIB_DIR/${NOW}_library_new.tsv"
-  awk -v FS='\t' -v OFS='\n' -v date_start="$LAST_RUN" -v date_end="$NOW" '{if ($18>=date_start && $18<=date_end && $10>1) { print $0 }}' "$SCRIPT_DIR/tmp/${NOW}_library_new.tsv" >> "$HIST_LIB_DIR/${NOW}_library_new.tsv"
+  awk -v FS='\t' -v OFS='\n' -v date_start="$LAST_RUN" -v date_end="${NOW}T23:59:59Z" '{if ($18>=date_start && $18<=date_end && $10>1) { print $0 }}' "$SCRIPT_DIR/tmp/${NOW}_library_new.tsv" >> "$HIST_LIB_DIR/${NOW}_library_new.tsv"
   echo "=== File saved to: $HIST_LIB_DIR/${NOW}_library_new.tsv"
 fi
 #########################################################################################################################
@@ -252,8 +276,17 @@ fi
 #  grep '^error' $SCRIPT_DIR/tmp/${NOW}_download.log && continue || break
 #done
 #########################################################################################################################
-# Save last run
-[[ "$DEBUG_DONT_UPDATE_LASTRUN" == "true" ]] || echo "$NOW" > "${STATUS_FILE}"
+# Save last run - TODO MULTIPLE RUNS
+if [[ "$DEBUG_DONT_UPDATE_LASTRUN" != "true" ]]; then
+  previous_run=$(tail -n 1 "${STATUS_FILE}")
+  if [[ "$previous_run" == "$NOW" ]]; then
+    head -n 1 "${STATUS_FILE}" > "$SCRIPT_DIR/tmp/status"
+  else
+    echo "$previous_run" > "$SCRIPT_DIR/tmp/status"
+  fi
+  echo "$NOW" >> "$SCRIPT_DIR/tmp/status"
+  mv "$SCRIPT_DIR/tmp/status"  "${STATUS_FILE}"
+fi
 #########################################################################################################################
 # Export required env for parallel execution
 export ACTIVATION_BYTES
@@ -266,11 +299,15 @@ export DEST_COPY_PDF
 export DEST_COPY_CHAPTERS_FILE
 export DEST_COPY_ANNOT_FILE
 export CONVERT_BITRATE
+export CONVERT_BITRATE_RATIO
+export CONVERT_SKIP_IFOGAEXISTS
 export CONVERT_DECRYPTONLY
 export METADATA_SOURCE
 export METADATA_TIKA
 export METADATA_SINGLENAME_AUTHORS
 export METADATA_CLEAN_AUTHOR_PATTERN
+export METADATA_SKIP_IFEXISTS
+export METADATA_CHAPTERS
 export DEBUG
 export DEBUG_USEAAXSAMPLE
 export DEBUG_USEAAXCSAMPLE
@@ -467,19 +504,35 @@ function build_metadata() {
   title=${tmp%-*}
   asin=${tmp%%_*}
   chapters_file=$(dirname "$1")/$title-chapters.json
+  if [[ "$METADATA_SKIP_IFEXISTS" == "true" && -f "${1}_metadata_new" ]]; then
+    echo "=== Metadata already exists for '$1', skipping..."
+    return
+  fi
   # If multiple covers get downloaded then select the best quality (largest one :)
   art=$(du "$(dirname "$1")/${asin}"*jpg | sort -nr | head -1 | cut -f2)
   echo "=== Building metadata for $title ($asin)"
   # Extract metadata
-  ffmpeg -y -nostdin -i "$1" -f ffmetadata "$1"_metadata >/dev/null 2>/dev/null
+  if ! ffmpeg -y -nostdin -loglevel warning -i "$1" -f ffmetadata "${1}_metadata"; then
+    echo "=== ERROR: ffmpeg failed to extract metadata from $1, skiping..."
+    return
+  fi
   mediainfo --Output=JSON "$1" | jq . - > "$1"_mediainfo.json
-  # Merge chapter.json into metadata file
-  if [[ -f "$chapters_file" ]]; then
-    python "$SCRIPT_DIR"/update_chapter_titles.py -f "$1"_metadata \
-                                    -a "$chapters_file" \
-                                    -o "$1"_metadata_new
-  else
-    cp "$1"_metadata "$1"_metadata_new
+  # Enrich chapters
+  case "$METADATA_CHAPTERS" in
+    "keep")
+      cp "${1}_metadata" "${1}_metadata_new" ;;
+    "updatetitles")
+      if [[ -f "$chapters_file" ]]; then
+        python "$SCRIPT_DIR"/update_chapter_titles.py -f "${1}_metadata" \
+                                        -a "$chapters_file" \
+                                        -o "${1}_metadata_new" 2>/dev/null || echo "=== ERROR Modifying chapters failed, using original file metadata."
+      fi ;;
+    "rebuild")
+      "$SCRIPT_DIR"/rebuild_chapters.sh "$chapters_file" "${1}_mediainfo.json" "${1}_metadata" "${1}_metadata_new" \
+      || echo "=== ERROR Modifying chapters failed, using original file metadata." ;;
+  esac
+  if [[ ! -f "${1}_metadata_new" ]]; then
+    cp "${1}_metadata" "${1}_metadata_new"
   fi
   if [[ "$METADATA_SOURCE" == "all" ]]; then
     echo "=== Using all possible metadata (original aax/aaxc file with ffmpeg/mediainfo and library)"
@@ -491,15 +544,15 @@ function build_metadata() {
       case "${columns[i]//$'\r'/}" in
         asin)
           #asin / audible_asin           ASIN
-          update_metadata "$1"_metadata_new asin "${libdata[i]}"
-          update_metadata "$1"_metadata_new audible_asin "${libdata[i]}" ;;
+          update_metadata "${1}_metadata_new" asin "${libdata[i]}"
+          update_metadata "${1}_metadata_new" audible_asin "${libdata[i]}" ;;
         title)
           #album / title                 Title
-          update_metadata "$1"_metadata_new title "${libdata[i]}"
-          update_metadata "$1"_metadata_new album "${libdata[i]}" ;;
+          update_metadata "${1}_metadata_new" title "${libdata[i]}"
+          update_metadata "${1}_metadata_new" album "${libdata[i]}" ;;
         subtitle)
           #subtitle                      Subtitle
-          update_metadata "$1"_metadata_new subtitle "${libdata[i]}" ;;
+          update_metadata "${1}_metadata_new" subtitle "${libdata[i]}" ;;
         extended_product_description) ;;
           # enrich description/comment ???
         authors) {
@@ -508,10 +561,10 @@ function build_metadata() {
           if [[ -z "${libdata[i]}" ]]; then
             tmp="${libdata[i]}"
           else
-            tmp=$(jq -r '.media.track[] | select(."@type" == "General") | .Album_Performer' "$1"_mediainfo.json)
+            tmp=$(jq -r '.media.track[] | select(."@type" == "General") | .Album_Performer' "${1}_mediainfo.json")
           fi
-          update_metadata "$1"_metadata_new artist "$(metadata_clean_authors "${tmp}" ' ; ')"
-          update_metadata "$1"_metadata_new album_artist "$(metadata_clean_authors "${tmp}" ' ; ')"
+          update_metadata "${1}_metadata_new" artist "$(metadata_clean_authors "${tmp}" ' ; ')"
+          update_metadata "${1}_metadata_new" album_artist "$(metadata_clean_authors "${tmp}" ' ; ')"
         } ;;
         narrators) {
           #composer                      Narrator
@@ -519,21 +572,21 @@ function build_metadata() {
           if [[ -z "${libdata[i]}" ]]; then
             tmp="${libdata[i]}"
           else
-            tmp="$(jq -r '.media.track[] | select(."@type" == "General") | .extra.nrt' "$1"_mediainfo.json)"
+            tmp="$(jq -r '.media.track[] | select(."@type" == "General") | .extra.nrt' "${1}_mediainfo.json")"
           fi
-          update_metadata "$1"_metadata_new composer "$(metadata_clean_authors "${tmp}" ' ; ')"
+          update_metadata "${1}_metadata_new" composer "$(metadata_clean_authors "${tmp}" ' ; ')"
           } ;;
         series_title)
           #series / mvnm                 Series
-          update_metadata "$1"_metadata_new series "${libdata[i]}"
-          update_metadata "$1"_metadata_new mvnm "${libdata[i]}" ;;
+          update_metadata "${1}_metadata_new" series "${libdata[i]}"
+          update_metadata "${1}_metadata_new" mvnm "${libdata[i]}" ;;
         series_sequence)
           #series-part / mvin            Series Sequence
-          update_metadata "$1"_metadata_new series-part "${libdata[i]}"
-          update_metadata "$1"_metadata_new mvin "${libdata[i]}" ;;
+          update_metadata "${1}_metadata_new" series-part "${libdata[i]}"
+          update_metadata "${1}_metadata_new" mvin "${libdata[i]}" ;;
         genres)
           #genre                         Genres
-          update_metadata "$1"_metadata_new genre "${libdata[i]//,/;}" ;;
+          update_metadata "${1}_metadata_new" genre "${libdata[i]//,/;}" ;;
         runtime_length_min) ;;
         is_finished) ;;
         percent_complete) ;;
@@ -542,16 +595,16 @@ function build_metadata() {
         date_added) ;;
         release_date)
           #year                          Publish Year
-          update_metadata "$1"_metadata_new year "${libdata[i]}" ;;
+          update_metadata "${1}_metadata_new" year "${libdata[i]}" ;;
         cover_url) ;;
         purchase_date) ;;
       esac
     done
     # publisher
-    update_metadata "$1"_metadata_new publisher "$(jq -r '.media.track[] | select(."@type" == "General") | .extra.pub' "$1"_mediainfo.json)"
+    update_metadata "$1"_metadata_new publisher "$(jq -r '.media.track[] | select(."@type" == "General") | .extra.pub' "${1}_mediainfo.json")"
     # description (afaik ffmpeg 7.1 cant write 'description' instead uses 'comment' to write description)
-    description=$(jq -r '.media.track[] | select(."@type" == "General") | .Track_More' "$1"_mediainfo.json)
-    update_metadata "$1"_metadata_new comment "$description"
+    description=$(jq -r '.media.track[] | select(."@type" == "General") | .Track_More' "${1}_mediainfo.json")
+    update_metadata "${1}_metadata_new" comment "$description"
     # Language seems always wrong in Audible tags (at least for international releases)
     # Workaround with Tika (detect language from title description text if text is long enough)
     if [[ "${#description}" -gt "100" ]]; then
@@ -562,12 +615,12 @@ function build_metadata() {
         lang=$(curl -s --connect-timeout 2 -T- ${METADATA_TIKA}/meta/language --header "Accept: text/plain" <<< "$description")
       fi
       if [[ -n "$lang" ]]; then
-        update_metadata "$1"_metadata_new language "$lang"
-        update_metadata "$1"_metadata_new lang "$lang"
+        update_metadata "${1}_metadata_new" language "$lang"
+        update_metadata "${1}_metadata_new" lang "$lang"
       fi
     fi
     # Add custom tag
-    update_metadata "$1"_metadata_new "encoded_using" "Brand new Audible Library Downloader (BALD)"
+    update_metadata "${1}_metadata_new" "encoded_using" "BALD (Brand new Audible Library Downloader)"
   fi
   # Create OGG cover metadata
   if [[ "$DEBUG_DONTEMBEDCOVER" != "true" ]]; then
@@ -575,12 +628,11 @@ function build_metadata() {
     # art in metadata new
     sed -i '1s/^/METADATA_BLOCK_PICTURE=/' "${art%.*}.base64"   # Add metadata prefix
     echo >> "${art%.*}.base64"                                  # Add new line at the end
-    sed -i "2e cat '${art%.*}.base64'\n" "$1"_metadata_new      # Insert cover art in main metadata file
+    sed -i "2e cat '${art%.*}.base64'\n" "${1}_metadata_new"      # Insert cover art in main metadata file
   fi
   # Delete intermediate file, keep if DEBUG true
   if [[ "$DEBUG" != "true" ]]; then
-    rm -f "$1"_metadata
-    rm -f "$1"_mediainfo.json
+    rm -f "${1}_metadata"
     rm -f "${art%.*}.base64"
   fi
 }
@@ -589,7 +641,7 @@ export -f build_metadata
 # Convert AAX/AAXC files & insert metadata
 # $1 Audiobook/Podcast file (with full path)
 function convert_audio() {
-  local my_audiobook title asin type decrypt_param tmp voucher aaxc_iv aaxc_key input_file lang langopt
+  local my_audiobook title asin type decrypt_param tmp voucher aaxc_iv aaxc_key input_file lang langopt original_bitrate new_bitrate
   my_audiobook=$1
   tmp=$(basename "$my_audiobook")
   title=${tmp%-*}
@@ -598,6 +650,17 @@ function convert_audio() {
   input_file="$my_audiobook"
   echo "=== Converting $title ($asin) ($type)"
   [[ "$DEBUG" == "true" ]] && echo "### DEBUG: $my_audiobook"
+  if [[ ! -f "${my_audiobook}_metadata_new" ]]; then
+    echo "=== ERROR: Missing metadata file for ${my_audiobook}, skipping..."
+    return
+  elif [[ ! -f "${my_audiobook}_mediainfo.json" ]]; then
+    echo "=== ERROR: Missing mediainfo file for ${my_audiobook}, skipping..."
+    return
+  fi
+  if [[ "$CONVERT_SKIP_IFOGAEXISTS" == "true" && -f "${my_audiobook}.oga" ]]; then
+    echo "=== OGA file exists (but not moved), skipping conversion..."
+    return
+  fi
   # Preparing ffmpeg decrypting opts
   if [[ "$type" == "aaxc" ]]; then
     if [[ "$DEBUG_USEAAXCSAMPLE" != "false" ]]; then
@@ -622,22 +685,29 @@ function convert_audio() {
            "$my_audiobook".m4b
   else
     # Fetch language metadata if available (ffmpeg seems buggy setting this from ffmetadata file, but works from command line)
-    lang=$(grep language "$my_audiobook"_metadata_new)
+    lang=$(grep language "${my_audiobook}_metadata_new")
     langopt=()
     if [[ -n "$lang" ]]; then
       langopt=(-metadata:s:0 "$lang")
     fi
+    # Custom bitrate
+    original_bitrate=$(jq -r '.media.track[] | select(."@type" == "Audio") | .BitRate' "${my_audiobook}_mediainfo.json")
+    if [[ "$CONVERT_BITRATE_RATIO" != "false" ]]; then
+      new_bitrate="$(echo "scale=10; $original_bitrate * $CONVERT_BITRATE_RATIO / 1024" | bc | awk '{print int($1+0.5)}')"k
+    else
+      new_bitrate="$CONVERT_BITRATE"
+    fi
     # Convert file to ogg (opus) using ffmpeg
     ffmpeg -y -nostdin -loglevel warning -stats "${decrypt_param[@]}" \
-          -i "$input_file" -i "$my_audiobook"_metadata_new \
+          -i "$input_file" -i "${my_audiobook}_metadata_new" \
           -map_metadata 1 -map_chapters 1 \
           "${langopt[@]}" \
-          -c:v copy -c:a libopus -b:a "$CONVERT_BITRATE" -vbr on \
-          "$my_audiobook".oga
+          -c:v copy -c:a libopus -b:a "$new_bitrate" -vbr on \
+          "${my_audiobook}.oga"
     # Debug metadata
     if [[ "$DEBUG_METADATA" == "true" ]]; then
-      echo "### DEBUG METADATA: $my_audiobook.oga_metadata"
-      ffprobe -v quiet -print_format default -show_format -show_streams -select_streams a -i "$my_audiobook".oga | grep TAG | sed 's/^TAG://' > "$my_audiobook".oga_metadata
+      echo "### DEBUG METADATA: ${my_audiobook}.oga_metadata"
+      ffprobe -v quiet -print_format default -show_format -show_streams -select_streams a -i "${my_audiobook}.oga" | grep TAG | sed 's/^TAG://' > "${my_audiobook}.oga_metadata"
     fi
   fi
 }
@@ -654,7 +724,7 @@ if [[ -n "$my_audiofiles" ]]; then
     else
       echo ">>> Building audiobooks metadata ($METADATA_PARALLEL jobs)"
     fi
-    parallel -j"$METADATA_PARALLEL" build_metadata <<< "$my_audiofiles"
+    parallel --bar -j"$METADATA_PARALLEL" build_metadata <<< "$my_audiofiles"
   else
     [[ "$DEBUG" == "true" ]] && echo "### DEBUG AUDIOBOOKS METADATA SKIPPED"
   fi
@@ -667,7 +737,7 @@ if [[ -n "$my_audiofiles" ]]; then
     else
       echo ">>> Convert audiobooks ($CONVERT_PARALLEL jobs)"
     fi
-    parallel -j"$CONVERT_PARALLEL" -u convert_audio <<< "$my_audiofiles"
+    parallel --bar -j"$CONVERT_PARALLEL" convert_audio <<< "$my_audiofiles"
   else
     [[ "$DEBUG" == "true" ]] && echo "### DEBUG AUDIOBOOKS CONVERSION SKIPPED"
   fi
@@ -676,6 +746,44 @@ if [[ -n "$my_audiofiles" ]]; then
 else
   echo ">>> No audiobooks to process."
 fi
+#########################################################################################################################
+# Tmp stats
+rm -f "$SCRIPT_DIR/tmp/${NOW}_statistics.txt"
+{
+  echo "> Total AAX/AAXC:        $(find "$DOWNLOAD_DIR/$NOW" -name '*aax' -o -name '*aaxc' | wc -l)"
+  echo "> Total Chap files:      $(find "$DOWNLOAD_DIR/$NOW" -name '*chapters.json' | wc -l)"
+  echo "> Total Metadata:        $(find "$DOWNLOAD_DIR/$NOW" -name '*aax' -o -name '*aaxc' | while read -r file; do find "$DOWNLOAD_DIR/$NOW" -name "$(basename "${file}")_metadata_new"; done | wc -l)"
+  echo "> Missing Metadata:"
+  while read -r file; do
+    if [[ ! -f "${file}_metadata_new" ]]; then
+      echo "  =>  ${file}"
+    fi
+  done < <(find "$DOWNLOAD_DIR/$NOW" -name '*aax' -o -name '*aaxc')
+  echo "> Missing Mediainfo:"
+  while read -r file; do
+    if [[ ! -f "${file}_mediainfo.json" ]]; then
+      echo "  =>  ${file}"
+    fi
+  done < <(find "$DOWNLOAD_DIR/$NOW" -name '*aax' -o -name '*aaxc')
+  echo "> Total OGA:             $(find "$DOWNLOAD_DIR/$NOW" -name '*oga' | wc -l)"
+  echo "> Missing OGA:"
+  while read -r file; do
+    if [[ ! -f "${file}.oga" ]]; then
+      echo "  =>  ${file}"
+    fi
+  done < <(find "$DOWNLOAD_DIR/$NOW" -name '*aax' -o -name '*aaxc')
+  echo "> Missing AAX/AAXC:"
+  while read -r file; do
+    tmp=$(basename "${file}")
+    prefix="${tmp%-*}"
+    audiobook=$(find "$DOWNLOAD_DIR/$NOW" -name "${prefix}*aax" -o -name "${prefix}*aaxc")
+    if [[ -z "$audiobook" ]]; then
+      echo "  =>  ${prefix}"
+    fi
+  done < <(find "$DOWNLOAD_DIR/$NOW" -name '*chapters.json')
+  echo "> Total AAX/AAXC size:   $(du -hc "$DOWNLOAD_DIR/$NOW"/*aax "$DOWNLOAD_DIR/$NOW"/*aaxc 2>/dev/null | tail -n 1 | cut -f 1)"
+  echo "> Total OGA size:        $(du -hc "$DOWNLOAD_DIR/$NOW"/*oga 2>/dev/null | tail -n 1 | cut -f 1)"
+} > "$SCRIPT_DIR/tmp/${NOW}_statistics.txt"
 #########################################################################################################################
 # Converted audiobooks list
 my_ogabooks=$(find "$DOWNLOAD_DIR/$NOW" -maxdepth 1 -type f -name '*oga' | sort)
@@ -757,12 +865,13 @@ else
   echo ">>> No audiobooks to move."
 fi
 #########################################################################################################################
-# Basic statistics (download counts / converted count)
-count_books_audible=$(find "$DOWNLOAD_DIR/$NOW" -maxdepth 1 -type f -iname '*aax' -or -iname '*aaxc' | wc -l)
-count_books_oga=$(find "$DOWNLOAD_DIR/$NOW" -maxdepth 1 -type f -iname '*oga' | wc -l)
+# Show statistics
 echo ">>> Basic statistics"
-printf "=== %-32s %s\n" "Downloaded AAX/AAXC Audiobooks:" "$count_books_audible"
-printf "=== %-32s %s\n" "Converted Audiobooks to OGA:" "$count_books_oga"
+if [[ -f "$SCRIPT_DIR/tmp/${NOW}_statistics.txt" ]]; then
+  cat "$SCRIPT_DIR/tmp/${NOW}_statistics.txt"
+else
+  echo "=== Statistics file not found."
+fi
 #########################################################################################################################
 # Remove logs
 [[ "$CLEAN_TMPLOGS" == "true" ]] && rm -f "$SCRIPT_DIR/tmp/${NOW}"_*
