@@ -803,7 +803,7 @@ if [[ -n "$my_ogabooks" ]]; then
         if [[ "${key,,}" == "artist" ]]; then
           move_metadata["${key,,}"]=$(metadata_clean_authors "${value}" ' ; ')
         else
-          move_metadata["${key,,}"]="$value"
+          move_metadata["${key,,}"]="${value//\//-}"
         fi
       done < <(ffprobe -v quiet -print_format default -show_format -show_streams -select_streams a -i "$audiobook" | grep TAG | sed 's/^TAG://')
       # Build target directory path
