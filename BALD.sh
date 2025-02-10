@@ -259,7 +259,7 @@ if [[ "$DEBUG_SKIPDOWNLOADS" != "true" ]]; then
     for (( i=1; i<=DOWNLOAD_RETRIES; i++)); do
       echo "=== Download (try $i/$DOWNLOAD_RETRIES): $asin"
       [[ "$DEBUG" != "true" ]] && echo "audible download -f asin_ascii -j $DOWNLOAD_JOBS --timeout 40 --aax-fallback --ignore-errors $DOWNLOAD_PDF_OPT ${DOWNLOAD_COVERS_OPT[*]} --chapter $DOWNLOAD_ANNOT_OPT -o $DOWNLOAD_DIR/$NOW -a $asin"
-      audible download -f asin_ascii -j $DOWNLOAD_JOBS --timeout 40 --aax-fallback --ignore-errors $DOWNLOAD_PDF_OPT "${DOWNLOAD_COVERS_OPT[@]}" --chapter $DOWNLOAD_ANNOT_OPT -o "$DOWNLOAD_DIR/$NOW" -a "$asin" | tee "$SCRIPT_DIR/tmp/${NOW}_download_${asin}.log" | grep --color -e '^error: Error downloading' -e '^'
+      audible download -f asin_ascii -j $DOWNLOAD_JOBS --timeout 40 --aax-fallback --ignore-errors $DOWNLOAD_PDF_OPT "${DOWNLOAD_COVERS_OPT[@]}" --chapter --chapter-type Flat $DOWNLOAD_ANNOT_OPT -o "$DOWNLOAD_DIR/$NOW" -a "$asin" | tee "$SCRIPT_DIR/tmp/${NOW}_download_${asin}.log" | grep --color -e '^error: Error downloading' -e '^'
       if grep -q '^error: Error downloading' "$SCRIPT_DIR/tmp/${NOW}_download_${asin}.log"; then
         echo "=== ERROR detected during try $i/$DOWNLOAD_RETRIES, while downloading $asin,  retrying!"
         continue
