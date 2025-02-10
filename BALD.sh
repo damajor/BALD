@@ -372,12 +372,26 @@ function metadata_get_pattern() {
 }
 export -f metadata_get_pattern
 #########################################################################################################################
+# Truncate string to a maximum length
+# $1 string
+# $2 maximum length
+# Return string
+function truncate_string() {
+  local str="$1"
+  local max_length="$2"
+  # shellcheck disable=SC2000
+  if [ "$(echo "$str" | wc -c)" -gt "$max_length" ]; then
+    str=${str::max_length}
+  fi
+  echo "$str"
+}
+#########################################################################################################################
 # Build file or directory name based on a naming scheme input
 # $1 name or directory naming scheme
 # $2 metadata
 # Return string
 function build_string_from_scheme() {
-  local output
+  local output size_output size_meta
   local -n naming_scheme=$1
   local -n lmetadata=$2
   output=""
@@ -387,7 +401,15 @@ function build_string_from_scheme() {
     elif [[ -z "${lmetadata["$metaname"]}" ]]; then
       continue
     else
-      output+="${lmetadata["$metaname"]}"
+      # shellcheck disable=SC2000
+      size_output=$(echo "$output" | wc -c)
+      # shellcheck disable=SC2000
+      size_meta=$(echo "${lmetadata["$metaname"]}" | wc -c)
+      if [[ "$(( size_output + size_meta ))" -gt 240 ]]; then
+        output+=$(truncate_string "${lmetadata["$metaname"]}" "$((240 - size_output))" )
+      else
+        output+="${lmetadata["$metaname"]}"
+      fi
     fi
   done
   echo "$output"
