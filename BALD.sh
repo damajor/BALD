@@ -276,7 +276,7 @@ fi
 #  grep '^error' $SCRIPT_DIR/tmp/${NOW}_download.log && continue || break
 #done
 #########################################################################################################################
-# Save last run - TODO MULTIPLE RUNS
+# Save last run
 if [[ "$DEBUG_DONT_UPDATE_LASTRUN" != "true" ]]; then
   previous_run=$(tail -n 1 "${STATUS_FILE}")
   if [[ "$previous_run" == "$NOW" ]]; then
