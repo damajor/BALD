@@ -108,6 +108,8 @@ In case of a problem please open an issue on GitHub <https://github.com/damajor/
  - dynamic naming scheme for destination directories & file names
  - helper script for downloading external scripts
  - container Dockerfile provided with all dependencies & external scripts (tested on Podman rootless)
+ - basic statistics after each run
+ - local TSV database of converted audiobooks
  - and more...
 
 # Pre-requisites
@@ -205,6 +207,8 @@ It is recommended to run the script daily at most. It works better with a daily 
 > - **Also, it is HIGHLY recommended doing the first run manually. Just because it will sync entire library and can take hours of processing for big libraries.**
 
 ## Container usage
+
+[![Docker Repository on Quay](https://quay.io/repository/damajor/bald/status "Docker Repository on Quay")](https://quay.io/repository/damajor/bald)
 
 > **Notes:**  
 > The script has been developed using Podman rootless.  
@@ -391,6 +395,20 @@ The status file stores the complete date of the script's last execution (the dat
 
 > **Note:**
 > This setting is ignored when using the container. You MUST use volume mapping instead.
+
+### LOCAL_DB
+
+This is the file location where is stored all information about the audiobooks moved to your personal library.
+
+> **Example config:**  
+> `LOCAL_DB=$HOME/Audible/personal_library.tsv`
+
+### SKIP_IFIN_LOCAL_DB
+
+This flag tells the script to skip any kind of processing (download / metadata / conversion & file move) if the Audiobook is found in personal library.
+
+> **Example config:**  
+> `SKIP_IFIN_LOCAL_DB=true`
 
 ## Download settings
 
