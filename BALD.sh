@@ -30,6 +30,8 @@ AUDIBLECLI_PROFILE=myprofile      # Profile created with audible-cli
 HIST_LIB_DIR=$HOME/Audible/lib_history  # Directory to store library history downloads
 HIST_FULL_LIB=true                # Always download all library history list
 STATUS_FILE=$HOME/Audible/audible_last_sync # File to store last sync status
+LOCAL_DB=$HOME/Audible/personal_library.tsv # Check README.md
+SKIP_IFIN_LOCAL_DB=true           # Skip download / metadata processing / conversion & file move if Audiobook is found in personal library
 DOWNLOAD_PDF=true                 # Download companion files if any
 DOWNLOAD_ANNOT=true               # Download bookmarks
 DOWNLOAD_COVERS=true              # Download covers, you can specify sizes below
@@ -209,6 +211,7 @@ fi
 mkdir -p "$SCRIPT_DIR/tmp"
 mkdir -p "$HIST_LIB_DIR"
 mkdir -p "$DEST_BASE_DIR"
+touch "$LOCAL_DB"
 #Function of what trap command calls
 function ctrl_c() {
     echo -e "\n*** Received CTRL-C - Interrupting script. ***\n"
@@ -256,6 +259,11 @@ if [[ "$DEBUG_SKIPDOWNLOADS" != "true" ]]; then
       continue
     fi
     [[ "$DEBUG" == "true" ]] && echo "### DEBUG: ASIN => $asin"
+    # Skip if asin in local db
+    if [[ "$SKIP_IFIN_LOCAL_DB" == "true" ]] && grep -q -m1 "$asin" "$LOCAL_DB"; then
+      echo "=== ASIN already in personal library, skipping downloads..."
+      continue
+    fi
     for (( i=1; i<=DOWNLOAD_RETRIES; i++)); do
       echo "=== Download (try $i/$DOWNLOAD_RETRIES): $asin"
       [[ "$DEBUG" != "true" ]] && echo "audible download -f asin_ascii -j $DOWNLOAD_JOBS --timeout 40 --aax-fallback --ignore-errors $DOWNLOAD_PDF_OPT ${DOWNLOAD_COVERS_OPT[*]} --chapter $DOWNLOAD_ANNOT_OPT -o $DOWNLOAD_DIR/$NOW -a $asin"
@@ -294,6 +302,8 @@ export NOW
 export TIKA_METHOD
 export SCRIPT_DIR
 export HIST_LIB_DIR
+export LOCAL_DB
+export SKIP_IFIN_LOCAL_DB
 export DEST_COPY_COVER
 export DEST_COPY_PDF
 export DEST_COPY_CHAPTERS_FILE
@@ -526,6 +536,11 @@ function build_metadata() {
   title=${tmp%-*}
   asin=${tmp%%_*}
   chapters_file=$(dirname "$1")/$title-chapters.json
+  # Skip if asin in local db
+  if [[ "$SKIP_IFIN_LOCAL_DB" == "true" ]] && grep -q -m1 "$asin" "$LOCAL_DB"; then
+    echo "=== ASIN already in personal library, skipping metadata processing..."
+    return
+  fi
   if [[ "$METADATA_SKIP_IFEXISTS" == "true" && -f "${1}_metadata_new" ]]; then
     echo "=== Metadata already exists for '$1', skipping..."
     return
@@ -672,6 +687,11 @@ function convert_audio() {
   input_file="$my_audiobook"
   echo "=== Converting $title ($asin) ($type)"
   [[ "$DEBUG" == "true" ]] && echo "### DEBUG: $my_audiobook"
+  # Skip if asin in local db
+  if [[ "$SKIP_IFIN_LOCAL_DB" == "true" ]] && grep -q -m1 "$asin" "$LOCAL_DB"; then
+    echo "=== ASIN already in personal library, skipping conversion..."
+    return
+  fi
   if [[ ! -f "${my_audiobook}_metadata_new" ]]; then
     echo "=== ERROR: Missing metadata file for ${my_audiobook}, skipping..."
     return
@@ -828,6 +848,12 @@ if [[ -n "$my_ogabooks" ]]; then
           move_metadata["${key,,}"]="${value//\//-}"
         fi
       done < <(ffprobe -v quiet -print_format default -show_format -show_streams -select_streams a -i "$audiobook" | grep TAG | sed 's/^TAG://')
+      # Skip if asin in local db
+      if [[ "$SKIP_IFIN_LOCAL_DB" == "true" ]] && grep -q -m1 "${move_metadata[asin]}" "$LOCAL_DB"; then
+        echo "=== ASIN already in personal library, skipping move files..."
+        unset move_metadata
+        continue
+      fi
       # Build target directory path
       dir=()
       for metaname in "${DEST_DIR_NAMING_SCHEME_AUDIOBOOK[@]}"; do
@@ -838,8 +864,6 @@ if [[ -n "$my_ogabooks" ]]; then
       dir+=("$bookdir")
       # Build target book file name
       bookfilename=$(build_string_from_scheme DEST_BOOK_NAMING_SCHEME_AUDIOBOOK move_metadata)
-      # Clear local metadata
-      unset move_metadata
       # Full directory path
       IFS="/"
       dest_dir="${DEST_BASE_DIR}/${dir[*]}"
@@ -869,6 +893,17 @@ if [[ -n "$my_ogabooks" ]]; then
       fi
       mkdir -p "$dest_dir"
       move_files "$audiobook" "$dest_dir" "$bookfilename"
+      # Update local db (tmp)
+      if ! grep -q -m1 "${move_metadata[asin]}" "$LOCAL_DB"; then
+        awk -v asin="${move_metadata[asin]}" -v dest="$dest_dir" -F'\t' ' BEGIN { OFS = FS }
+          { gsub(/\r/, "") }
+          $0 ~ asin { $0 = $0 FS dest
+            print $0
+        }' "$HIST_LIB_DIR/${NOW}_library_new.tsv" >> "$SCRIPT_DIR/tmp/${NOW}_local_db.tsv"
+      fi
+      # Clear local metadata
+      unset move_metadata
+      # Keep downloads
       if [[ "$KEEP_DOWNLOADS" == "false" ]]; then
         tmptmp=$(basename "$audiobook")
         tmp_asin=${tmptmp%%_*}
@@ -877,6 +912,8 @@ if [[ -n "$my_ogabooks" ]]; then
         cd "$SCRIPT_DIR" || { echo "=== ERROR Cannot cd back to script directory"; exit 255; }
       fi
     done <<< "$my_ogabooks"
+    # Update local db
+    cat "$SCRIPT_DIR/tmp/${NOW}_local_db.tsv" >> "$LOCAL_DB"
   else
     [[ "$DEBUG" == "true" ]] && echo "### DEBUG MOVE & RENAME AUDIOBOOKS SKIPPED"
   fi
