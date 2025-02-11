@@ -928,6 +928,7 @@ fi
 echo ">>> Basic statistics"
 if [[ -f "$SCRIPT_DIR/tmp/${NOW}_statistics.txt" ]]; then
   cat "$SCRIPT_DIR/tmp/${NOW}_statistics.txt"
+  echo "> Total moved OGA:       $(wc -l "$SCRIPT_DIR/tmp/${NOW}_local_db.tsv" 2>/dev/null | cut -f 1 -d ' ')"
 else
   echo "=== Statistics file not found."
 fi
