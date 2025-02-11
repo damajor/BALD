@@ -52,7 +52,7 @@ CONVERT_DECRYPTONLY=false         # Only decrypt AAX/AAXC files (no additional m
 CONVERT_SKIP_IFOGAEXISTS=false    # Skip OGA exists
 DEST_BASE_DIR=$HOME/AudioBookShelf/audiobooks  # Directory for converted files (will be created if it doesnt exist)
 DEST_DIR_NAMING_SCHEME_AUDIOBOOK=(artist series)                  # Read README.md
-DEST_BOOKDIR_NAMING_SCHEME_AUDIOBOOK=(series-part "% - " title)   # Read README.md
+DEST_BOOKDIR_NAMING_SCHEME_AUDIOBOOK=(series-part "% - " title "% {" composer "%}")   # Read README.md
 DEST_BOOK_NAMING_SCHEME_AUDIOBOOK=(title)                         # Read README.md
 # Audiobook destination directory overwrite mode (cannot be empty)
 # 'true' or 'ignore':         If audiobook destination directory exists then overwrite files in it, other files in directory are preserved
@@ -65,7 +65,7 @@ DEST_COPY_PDF=true                # Copy PDF
 DEST_COPY_CHAPTERS_FILE=true      # Copy chapters json file
 DEST_COPY_ANNOT_FILE=true         # Copy annotations json file
 KEEP_DOWNLOADS=true               # Keep original files in download dir
-CLEAN_TMPLOGS=false               # Delete logs genrated for the current run (old ones are kept)
+CLEAN_TMPLOGS=true                # Delete logs generated for the current run (old ones are kept)
 # Parameters below are for debugging purposes (default for all bool params is 'false')
 DEBUG=false                       # Manual debug
 DEBUG_REPEAT_LAST_RUN=false       # TODO More doc
@@ -815,7 +815,7 @@ if [[ -n "$my_ogabooks" ]]; then
   if [[ "$DEBUG_SKIPMOVEBOOKS" != "true" ]]; then
     echo ">>> Moving & renaming audiobooks to: $DEST_BASE_DIR"
     while read -r audiobook; do
-      echo ">>> $audiobook"
+      echo ">>> Moving $audiobook"
       declare -A move_metadata
       # Publish metadata into array
       [[ "$DEBUG_METADATA" == "true" ]] && echo "### DEBUG: move_metadata = ${move_metadata[*]}"
