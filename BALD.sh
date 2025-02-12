@@ -70,7 +70,7 @@ KEEP_DOWNLOADS=true               # Keep original files in download dir
 CLEAN_TMPLOGS=true                # Delete logs generated for the current run (old ones are kept)
 # Parameters below are for debugging purposes (default for all bool params is 'false')
 DEBUG=false                       # Manual debug
-DEBUG_REPEAT_LAST_RUN=false       # TODO More doc
+DEBUG_REPEAT_LAST_RUN=false       # This flag is used to repeat the last run without updating the STATUS_FILE
 DEBUG_STEPPED_RUN=false           # TODO Debug with stepped updates (only works if STATUS_FILE does already exist)
 DEBUG_DONT_UPDATE_LASTRUN=false   # Update status file or not
 DEBUG_SKIPDOWNLOADS=false         # true: Disable ALL downloads, false or any other value: normal behavior

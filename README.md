@@ -858,6 +858,17 @@ Allowed values:
 > **Example config:**  
 > `DEBUG=false`
 
+#### DEBUG_REPEAT_LAST_RUN
+
+This flag is used to repeat the last run without updating the [STATUS_FILE](#status_file).
+
+Allowed values:  
+- 'true'  
+- 'false' or anything else
+
+> **Example config:**  
+> `DEBUG_REPEAT_LAST_RUN=false`
+
 #### DEBUG_DONT_UPDATE_LASTRUN
 
 Flag to tell if the script should update the [STATUS_FILE](#status_file).
