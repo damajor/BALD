@@ -1,5 +1,7 @@
 FROM alpine:latest
 
+RUN apk -i update
+RUN apk -i --no-cache upgrade
 RUN apk add --no-cache bash jq xxd mediainfo ffmpeg parallel curl openjdk21-jre tzdata coreutils sed python3 py3-pip bc && ln -sf python3 /usr/bin/python
 ENV PYTHONUNBUFFERED=1
 RUN apk add --update --no-cache git python3 py3-pip && ln -sf python3 /usr/bin/python
