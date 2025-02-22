@@ -208,9 +208,9 @@ fi
 [[ -z "$LAST_RUN" ]] && LAST_SYNC_OPT=()
 [[ "$DEBUG" == "true" || "$DEBUG_REPEAT_LAST_RUN" == "true" || "$DEBUG_STEPPED_RUN" == "true" ]] && echo "### DEBUG: LAST_SYNC_OPT ${LAST_SYNC_OPT[*]}"
 # Make working dirs
-mkdir -p "$SCRIPT_DIR/tmp"
-mkdir -p "$HIST_LIB_DIR"
-mkdir -p "$DEST_BASE_DIR"
+mkdir -p "$SCRIPT_DIR/tmp" || { echo "=== ERROR: Cannot create tmp directory. Exiting."; exit 1; }
+mkdir -p "$HIST_LIB_DIR" || { echo "=== ERROR: Cannot create library directory. Exiting."; exit 1; }
+mkdir -p "$DEST_BASE_DIR" || { echo "=== ERROR: Cannot create personal audiobook library directory. Exiting."; exit 1; }
 touch "$LOCAL_DB"
 #Function of what trap command calls
 function ctrl_c() {
@@ -795,20 +795,20 @@ rm -f "$SCRIPT_DIR/tmp/${NOW}_statistics.txt"
   echo "> Total AAX/AAXC:        $(find "$DOWNLOAD_DIR/$NOW" -name '*aax' -o -name '*aaxc' | wc -l)"
   echo "> Total Chap files:      $(find "$DOWNLOAD_DIR/$NOW" -name '*chapters.json' | wc -l)"
   echo "> Total Metadata:        $(find "$DOWNLOAD_DIR/$NOW" -name '*aax' -o -name '*aaxc' | while read -r file; do find "$DOWNLOAD_DIR/$NOW" -name "$(basename "${file}")_metadata_new"; done | wc -l)"
-  echo "> Missing Metadata:"
+  echo "> Missing Metadata (ignore this if processing was skipped):"
   while read -r file; do
     if [[ ! -f "${file}_metadata_new" ]]; then
       echo "  =>  ${file}"
     fi
   done < <(find "$DOWNLOAD_DIR/$NOW" -name '*aax' -o -name '*aaxc')
-  echo "> Missing Mediainfo:"
+  echo "> Missing Mediainfo (ignore this if processing was skipped):"
   while read -r file; do
     if [[ ! -f "${file}_mediainfo.json" ]]; then
       echo "  =>  ${file}"
     fi
   done < <(find "$DOWNLOAD_DIR/$NOW" -name '*aax' -o -name '*aaxc')
   echo "> Total OGA:             $(find "$DOWNLOAD_DIR/$NOW" -name '*oga' | wc -l)"
-  echo "> Missing OGA:"
+  echo "> Missing OGA (ignore this if processing was skipped):"
   while read -r file; do
     if [[ ! -f "${file}.oga" ]]; then
       echo "  =>  ${file}"
