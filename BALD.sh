@@ -498,7 +498,7 @@ function move_files() {
     if [[ -f "$annots_file" ]]; then
       if [[ "$DEBUG" == "true" ]]; then
         echo "### DEBUG: Copy annotations: $annots_file"
-        cp "$annots_file" "$2/$3-annotions.json"
+        cp "$annots_file" "$2/$3-annotations.json"
       else
         mv "$annots_file" "$2/$3-annotions.json"
       fi
