@@ -500,7 +500,7 @@ function move_files() {
         echo "### DEBUG: Copy annotations: $annots_file"
         cp "$annots_file" "$2/$3-annotations.json"
       else
-        mv "$annots_file" "$2/$3-annotions.json"
+        mv "$annots_file" "$2/$3-annotations.json"
       fi
     fi
   fi
