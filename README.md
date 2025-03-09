@@ -1,7 +1,11 @@
 ---
+title: BALD
+permalink: index.html
 output: pdf_document
 geometry: margin=2cm
 ---
+
+[![Docker Repository on Quay](https://quay.io/repository/damajor/bald/status "Docker Repository on Quay")](https://quay.io/repository/damajor/bald)
 
     BBBBBBBBBBBBBBBBB               AAA               LLLLLLLLLLL             DDDDDDDDDDDDD        
     B::::::::::::::::B             A:::A              L:::::::::L             D::::::::::::DDD     
