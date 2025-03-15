@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 #
 #     _____               _                     _____       _ _ _   _          
 #    | __  |___ ___ ___ _| |   ___ ___ _ _ _   |  _  |_ _ _| |_| |_| |___      
@@ -293,7 +294,8 @@ if [[ "$DEBUG_DONT_UPDATE_LASTRUN" != "true" ]]; then
     echo "$previous_run" > "$SCRIPT_DIR/tmp/status"
   fi
   echo "$NOW" >> "$SCRIPT_DIR/tmp/status"
-  mv "$SCRIPT_DIR/tmp/status"  "${STATUS_FILE}"
+  cp "$SCRIPT_DIR/tmp/status" "${STATUS_FILE}"
+  rm "$SCRIPT_DIR/tmp/status"
 fi
 #########################################################################################################################
 # Export required env for parallel execution
@@ -705,7 +707,7 @@ function convert_audio() {
   fi
   # Preparing ffmpeg decrypting opts
   if [[ "$type" == "aaxc" ]]; then
-    if [[ "$DEBUG_USEAAXCSAMPLE" != "false" ]]; then
+    if [[ "$DEBUG_USEAAXCSAMPLE" != "false" && -f "$DEBUG_USEAAXCSAMPLE" ]]; then
       echo "### DEBUG: Input AAXC replaced with sample => $DEBUG_USEAAXCSAMPLE"
       input_file="$SCRIPT_DIR/$DEBUG_USEAAXCSAMPLE"
     fi
@@ -714,7 +716,7 @@ function convert_audio() {
     aaxc_iv=$(jq -r '.content_license.license_response.iv' "${voucher}")    
     decrypt_param=(-audible_key "${aaxc_key}" -audible_iv "${aaxc_iv}")
   else
-    if [[ "$DEBUG_USEAAXSAMPLE" != "false" ]]; then
+    if [[ "$DEBUG_USEAAXSAMPLE" != "false" && -f "$DEBUG_USEAAXSAMPLE" ]]; then
       echo "### DEBUG: Input AAX replaced with sample => $DEBUG_USEAAXSAMPLE"
       input_file="$SCRIPT_DIR/$DEBUG_USEAAXSAMPLE"
     fi
