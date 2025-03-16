@@ -231,6 +231,7 @@ HIST_LIB_DIR="/audible_history"
 STATUS_FILE="/status_file"
 DOWNLOAD_DIR="/audible_dl"
 DEST_BASE_DIR="/audiobooks_dest"
+LOCAL_DB="/BALD/personal_library.tsv"
 DEBUG_USEAAXSAMPLE=/sample.aax
 DEBUG_USEAAXCSAMPLE=/sample.aaxc
 ```
@@ -244,15 +245,16 @@ When mapping local directories to your container, make sure that they all exist.
 
 The following volumes MUST be mapped to the container, if one map is missing the script will exit with an error message with the missing volume:
 
-| Local                                     | Container          | Type    |
-|-------------------------------------------|--------------------|---------|
-| [HIST_LIB_DIR](#hist_lib_dir)             | /audible_history   | dir     |
-| [STATUS_FILE](#status_file)               | /status_file       | file    |
-| [DOWNLOAD_DIR](#download_dir)             | /audible_dl        | dir     |
-| [DEST_BASE_DIR](#dest_base_dir)           | /audiobooks_dest   | dir     |
-| myconfig                                  | /BALD/myconfig     | file    |
-| tmp logs directory                        | /BALD/tmp          | dir     |
-| audible-cli config dir                    | /root/.audible     | dir     |
+| Local                                     | Container                   | Type    |
+|-------------------------------------------|-----------------------------|---------|
+| [HIST_LIB_DIR](#hist_lib_dir)             | /audible_history            | dir     |
+| [STATUS_FILE](#status_file)               | /status_file                | file    |
+| [DOWNLOAD_DIR](#download_dir)             | /audible_dl                 | dir     |
+| [DEST_BASE_DIR](#dest_base_dir)           | /audiobooks_dest            | dir     |
+| [LOCAL_DB](#local_db)                     | /BALD/personal_library.tsv  | dir     |
+| myconfig                                  | /BALD/myconfig              | file    |
+| tmp logs directory                        | /BALD/tmp                   | dir     |
+| audible-cli config dir                    | /root/.audible              | dir     |
 
 #### Optional
 
@@ -286,6 +288,7 @@ HIST_LIB_DIR="/home/myuser/Audible/lib_history"
 STATUS_FILE="/home/myuser/Audible/audible_last_sync"
 DOWNLOAD_DIR="/home/myuser/Audible/Downloads"
 DEST_BASE_DIR="/home/myuser/AudioBookShelf/audiobooks"
+LOCAL_DB="/home/myuser/Audible/personal_library.tsv"
 DEBUG_USEAAXSAMPLE=sample.aax
 DEBUG_USEAAXCSAMPLE=sample.aaxc
 ```
@@ -297,6 +300,7 @@ podman run -it --rm \
     -v /home/myuser/Audible/lib_history:/audible_history \
     -v /home/myuser/Audible/audible_last_sync:/status_file \
     -v /home/myuser/Audible/Downloads:/audible_dl \
+    -v /home/myuser/Audible/personal_library.tsv:/BALD/personal_library.tsv \
     -v /home/myuser/AudioBookShelf/audiobooks:/audiobooks_dest \
     -v /home/myuser/BALD/myconfig:/BALD/myconfig \
     -v /home/myuser/BALD/tmp:/BALD/tmp \
@@ -322,17 +326,78 @@ services:
     environment:
       - TZ=Europe/Rome
     volumes:
-      - /home/mysuser/.audible:/root/.audible:z
-      - /home/mysuser/Audible/lib_history:/audible_history:z
-      - /home/mysuser/Audible/audible_last_sync:/status_file:z
-      - /home/mysuser/Audible/downloads:/audible_dl:z
-      - /home/mysuser/AudioBookShelf/audiobooks:/audiobooks_dest:z
-      - /home/mysuser/BALD/myconfig:/BALD/myconfig:z
-      - /home/mysuser/BALD/tmp:/BALD/tmp:z
+      - /home/myuser/.audible:/root/.audible:z
+      - /home/myuser/Audible/lib_history:/audible_history:z
+      - /home/myuser/Audible/audible_last_sync:/status_file:z
+      - /home/myuser/Audible/downloads:/audible_dl:z
+      - /home/myuser/Audible/personal_library.tsv:/BALD/personal_library.tsv:z
+      - /home/myuser/AudioBookShelf/audiobooks:/audiobooks_dest:z
+      - /home/myuser/BALD/myconfig:/BALD/myconfig:z
+      - /home/myuser/BALD/tmp:/BALD/tmp:z
 ```
 
 Run with:  
 `podman compose -f compose.yaml up --force-recreate`
+
+### Podman Quadlet (systemd integration)
+
+Below is an example systemd quadlet for a oneshot BALD service.
+
+1. Create a file `/home/YOURUSER/.config/containers/systemd/bald.container` with the content below (change the path to your local paths)
+
+```
+[Unit]
+Description=Podman BALD
+
+[Install]
+
+[Service]
+Restart=never
+Type=oneshot
+
+[Container]
+Image=quay.io/damajor/bald:latest
+ContainerName=bald
+HostName=bald
+AutoUpdate=registry
+Volume=/home/myuser/Audible/lib_history:/audible_history:Z
+Volume=/home/myuser/Audible/audible_last_sync:/status_file:Z
+Volume=/home/myuser/Audible/downloads:/audible_dl:Z
+Volume=/home/myuser/AudioBookShelf/audiobooks:/audiobooks_dest:z
+Volume=/home/myuser/Audible/personal_library.tsv:/BALD/personal_library.tsv:Z
+Volume=/home/myuser/BALD/myconfig:/BALD/myconfig:Z
+Volume=/home/myuser/BALD/tmp:/BALD/tmp:Z
+Volume=/home/myuser/.audible:/root/.audible:Z
+Environment="GENERIC_TIMEZONE=Europe/Rome" "TZ=Europe/Rome"
+```
+
+2. Run `systemctl --user daemon-reload`
+3. To run BALD just do `systemctl --user start bald.service` each time you need to sync your Audible library
+
+### Podman Quadlet Automation
+
+For scheduling synchronization of your library, create a systemd timer.
+
+1. Create the timer file `/home/YOURUSER/.config/systemd/user/bald.timer` with the following content
+
+```
+[Unit]
+Description=Podman BALD timer
+RefuseManualStart=no
+RefuseManualStop=no
+
+[Timer]
+# Runs sync every day at 23:30
+OnCalendar=Mon..Sun 23:30
+Persistent=false
+Unit=bald.service
+
+[Install]
+WantedBy=timers.target
+```
+
+2. Run `systemctl --user daemon-reload`
+3. Enable & start the timer with `systemctl --user enable --now bald.timer`
 
 # Configuration
 
