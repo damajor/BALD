@@ -352,7 +352,7 @@ Description=Podman BALD
 [Install]
 
 [Service]
-Restart=never
+Restart=no
 Type=oneshot
 
 [Container]

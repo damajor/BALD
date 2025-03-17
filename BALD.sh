@@ -202,7 +202,7 @@ else
   NOW=$(date +%Y-%m-%d)
 fi
 if [[ "$LAST_RUN" == "$NOW" ]]; then
-  LAST_RUN=$(head -n 1 "${STATUS_FILE}" 2>/dev/null)
+  LAST_RUN=${NOW}T00:00:01Z
   LAST_SYNC_OPT=(--start-date "$LAST_RUN" --end-date "${NOW}T23:59:59Z")
 fi
 # Full sync
