@@ -51,24 +51,25 @@ Table of content
 
 1. [Description](#description)
 2. [Feature details](#feature-details)
-3. [Pre-requisites](#pre-requisites)
-4. [Required tools](#required-tools)
-5. [Optional tools](#optional-tools)
-6. [Repository files description](#repository-files-description)
-7. [Installation](#installation)
-8. [Usage examples](#usage-examples)
+3. [For the impatient](#for-the-impatient)
+4. [Pre-requisites](#pre-requisites)
+5. [Required tools](#required-tools)
+6. [Optional tools](#optional-tools)
+7. [Repository files description](#repository-files-description)
+8. [Installation](#installation)
+9. [Usage examples](#usage-examples)
     1. [Manual run](#manual-run)
     2. [Automatic run (crontab)](#automatic-run-crontab)
     3. [Container usage](#container-usage)
-9. [Configuration](#configuration)
+10. [Configuration](#configuration)
     1. [Script main settings](#script-main-settings)
     2. [Download settings](#download-settings)
     3. [Metadata related settings](#metadata-related-settings)
     4. [Conversion settings](#conversion-settings)
     5. [File move settings](#file-move-settings)
     6. [Debug settings](#debug-settings)
-10. [Anti-piracy notice](#anti-piracy-notice)
-11. [License](#license)
+11. [Anti-piracy notice](#anti-piracy-notice)
+12. [License](#license)
 
 <!-- /code_chunk_output -->
 
@@ -115,6 +116,10 @@ In case of a problem please open an issue on GitHub <https://github.com/damajor/
  - basic statistics after each run
  - local TSV database of converted audiobooks
  - and more...
+
+# For the impatient
+
+Go read the full Podman walkthrough here [README_Podman_Walkthrough.md](README_Podman_Walkthrough.md).
 
 # Pre-requisites
 
