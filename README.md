@@ -620,7 +620,7 @@ Allowed values: regex string
 - 'traducteur|traductrice|editeur|editrice' => remove all authors matching any of these words
 
 > **Example config:**  
-> `METADATA_CLEAN_AUTHOR_PATTERN='traducteur|traductrice|editeur|editrice'`
+> `METADATA_CLEAN_AUTHOR_PATTERN='traducteur|traductrice|editeur|editrice|editor|illustrateur|éditeur|éditrice'`
 
 ### METADATA_SINGLENAME_AUTHORS
 
