@@ -455,12 +455,19 @@ function move_files() {
   annots_file="$dirnam/$title-annotations.json"
   pdf_file="$dirnam/$title.pdf"
   cover_file=$(du "$dirnam/${title}"*jpg | sort -nr | head -1 | cut -f2)
+
+  if [[ "$CONVERT_DECRYPTONLY" == "true" ]]; then
+    move_to_file="$2/$3.m4b"
+  else
+    move_to_file="$2/$3.oga"
+  fi
+
   # Move audio file
   if [[ "$DEBUG" == "true" ]]; then
-    echo "### DEBUG: Copy converted audiobook: $cover_file"
-    cp "$1" "$2/$3.oga"
+    echo "### DEBUG: Copy converted audiobook: $1 to $move_to_file"
+    cp "$1" "$move_to_file"
   else
-    mv "$1" "$2/$3.oga"
+    mv "$1" "$move_to_file"
   fi
   # Copy cover
   if [[ "$DEST_COPY_COVER" == true ]]; then
@@ -830,7 +837,12 @@ rm -f "$SCRIPT_DIR/tmp/${NOW}_statistics.txt"
 } > "$SCRIPT_DIR/tmp/${NOW}_statistics.txt"
 #########################################################################################################################
 # Converted audiobooks list
-my_ogabooks=$(find "$DOWNLOAD_DIR/$NOW" -maxdepth 1 -type f -name '*oga' | sort)
+if [[ "$CONVERT_DECRYPTONLY" == "true" ]]; then
+  my_ogabooks=$(find "$DOWNLOAD_DIR/$NOW" -maxdepth 1 -type f -name '*m4b' | sort)
+else 
+  my_ogabooks=$(find "$DOWNLOAD_DIR/$NOW" -maxdepth 1 -type f -name '*oga' | sort)
+fi
+# my_ogabooks=$(find "$DOWNLOAD_DIR/$NOW" -maxdepth 1 -type f -name '*oga' | sort)
 if [[ -n "$my_ogabooks" ]]; then
 #########################################################################################################################
 # Move converted audiobooks to final destination & delete downloaded files
