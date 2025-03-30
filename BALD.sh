@@ -24,36 +24,54 @@
 #  convert audiobooks, rename files and move them to target location.
 
 # IMPORTANT: Read README.md for pre-requisites, required and optional tools.
+#########################################################################################################################
+#### Set Script, DB amd Config Directories
+SCRIPT_DIR=$(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)
+DB_DIR=$SCRIPT_DIR/db
+CONFIG_DIR=$SCRIPT_DIR/config
+
+#### Set Configs that will be replaced by docker mod
+DOWNLOAD_DIR=$SCRIPT_DIR/downloads    # AAX & AAXC Audible files will be downloaded here
+DEST_BASE_DIR=$SCRIPT_DIR/audiobooks  # Directory for converted files (will be created if it doesnt exist)
+DEBUG_USEAAXSAMPLE=false              # AAX sample file to be encoded instead of big Audiobook (fast convert) (false to disable)
+DEBUG_USEAAXCSAMPLE=false             # AAXC sample file (false to disable) dont forget to put 'sample.voucher' in same dir
+
+#### Source docker_mod.sh for container execution safety
+if [[ -f "$SCRIPT_DIR"/docker_mod.sh ]]; then
+  [[ "$DEBUG" == "true" ]] && echo "### DEBUG Load docker_mod.sh for container compat."
+  source "$SCRIPT_DIR"/docker_mod.sh
+elif [[ -n "$container" || "$INCONTAINER" == "true" ]]; then
+  echo "=== ERROR: Running in container without 'docker_mod.sh'"
+  exit 1
+fi
 
 #########################################################################################################################
 #### User config
-AUDIBLECLI_PROFILE=myprofile      # Profile created with audible-cli
-HIST_LIB_DIR=$HOME/Audible/lib_history  # Directory to store library history downloads
-HIST_FULL_LIB=true                # Always download all library history list
-STATUS_FILE=$HOME/Audible/audible_last_sync # File to store last sync status
-LOCAL_DB=$HOME/Audible/personal_library.tsv # Check README.md
-SKIP_IFIN_LOCAL_DB=true           # Skip download / metadata processing / conversion & file move if Audiobook is found in personal library
-DOWNLOAD_PDF=true                 # Download companion files if any
-DOWNLOAD_ANNOT=true               # Download bookmarks
-DOWNLOAD_COVERS=true              # Download covers, you can specify sizes below
-DOWNLOAD_COVERS_SIZE=(500 1215)   # 500 seems the most used size but you can specify multiple sizes
-DOWNLOAD_WISHLIST=false           # Wishlist is downloaded in HIST_LIB_DIR
-DOWNLOAD_JOBS=2                   # (disabled for now) 1 less errors, 2 seems good, higher is hazardous
-DOWNLOAD_RETRIES=3                # Careful of not hammering Amazon servers by keeping this param low
-DOWNLOAD_DIR=$HOME/Audible/MyDownloads # AAX & AAXC Audible files will be downloaded here
-METADATA_PARALLEL=4               # Number of parallel jobs for metadata workload >= 1 (1 to do sequential conversion)
-METADATA_SOURCE=all               # 'aax' (source metadata from aax or aaxc) or 'all' (metadata from every possible sources)
-METADATA_TIKA=http://tikahost:9998 # Tika http url without trailing slash short timeouts (1 sec for validation, 2s for lang detection)
-METADATA_CLEAN_AUTHOR_PATTERN='*' # Read README.md
-METADATA_SINGLENAME_AUTHORS=true  # Keep single name authors or not
-METADATA_SKIP_IFEXISTS=false      # Skip metadata processing if AAXFILE_metadata_new exists
-METADATA_CHAPTERS=rebuild         # keep (keep aax chapters) / updatetitles (use python, may fail) / rebuild (recreate chapters)
-CONVERT_BITRATE=96k               # Bitrate for audio conversion
-CONVERT_BITRATE_RATIO=2/3         # Bitrate ratio from original bitrate (false to disable and always use CONVERT_BITRATE)
-CONVERT_PARALLEL=4                # Number of parallel jobs for conversion >= 1 (1 to do sequential conversion)
-CONVERT_DECRYPTONLY=false         # Only decrypt AAX/AAXC files (no additional metadata inserted, no conversion, just pure copy)
-CONVERT_SKIP_IFOGAEXISTS=false    # Skip OGA exists
-DEST_BASE_DIR=$HOME/AudioBookShelf/audiobooks  # Directory for converted files (will be created if it doesnt exist)
+AUDIBLECLI_PROFILE=profile            # Profile created with audible-cli
+HIST_LIB_DIR=$DB_DIR/lib_history      # Directory to store library history downloads
+HIST_FULL_LIB=true                    # Always download all library history list
+STATUS_FILE=$DB_DIR/audible_last_sync # File to store last sync status
+LOCAL_DB=$DB_DIR/personal_library.tsv # Check README.md
+SKIP_IFIN_LOCAL_DB=true               # Skip download / metadata processing / conversion & file move if Audiobook is found in personal library
+DOWNLOAD_PDF=true                     # Download companion files if any
+DOWNLOAD_ANNOT=true                   # Download bookmarks
+DOWNLOAD_COVERS=true                  # Download covers, you can specify sizes below
+DOWNLOAD_COVERS_SIZE=(500 1215)       # 500 seems the most used size but you can specify multiple sizes
+DOWNLOAD_WISHLIST=false               # Wishlist is downloaded in HIST_LIB_DIR
+DOWNLOAD_JOBS=2                       # (disabled for now) 1 less errors, 2 seems good, higher is hazardous
+DOWNLOAD_RETRIES=3                    # Careful of not hammering Amazon servers by keeping this param low
+METADATA_PARALLEL=4                   # Number of parallel jobs for metadata workload >= 1 (1 to do sequential conversion)
+METADATA_SOURCE=all                   # 'aax' (source metadata from aax or aaxc) or 'all' (metadata from every possible sources)
+METADATA_TIKA=http://tikahost:9998    # Tika http url without trailing slash short timeouts (1 sec for validation, 2s for lang detection)
+METADATA_CLEAN_AUTHOR_PATTERN='*'     # Read README.md
+METADATA_SINGLENAME_AUTHORS=true      # Keep single name authors or not
+METADATA_SKIP_IFEXISTS=false          # Skip metadata processing if AAXFILE_metadata_new exists
+METADATA_CHAPTERS=rebuild             # keep (keep aax chapters) / updatetitles (use python, may fail) / rebuild (recreate chapters)
+CONVERT_BITRATE=96k                   # Bitrate for audio conversion
+CONVERT_BITRATE_RATIO=2/3             # Bitrate ratio from original bitrate (false to disable and always use CONVERT_BITRATE)
+CONVERT_PARALLEL=4                    # Number of parallel jobs for conversion >= 1 (1 to do sequential conversion)
+CONVERT_DECRYPTONLY=false             # Only decrypt AAX/AAXC files (no additional metadata inserted, no conversion, just pure copy)
+CONVERT_SKIP_IFOGAEXISTS=false        # Skip OGA exists
 DEST_DIR_NAMING_SCHEME_AUDIOBOOK=(artist series)                  # Read README.md
 DEST_BOOKDIR_NAMING_SCHEME_AUDIOBOOK=(series-part "% - " title "% {" composer "%}")   # Read README.md
 DEST_BOOK_NAMING_SCHEME_AUDIOBOOK=(title)                         # Read README.md
@@ -80,25 +98,13 @@ DEBUG_SKIPBOOKMETADATA=false      # true: Disable audiobooks metadata, false or 
 DEBUG_SKIPMOVEBOOKS=false         # true: Skip moving & renaming Audiobooks, false or any other value: normal behavior
 DEBUG_DONTEMBEDCOVER=false        # Do not embed cover jpg in metadata
 DEBUG_METADATA=false              # extract metadata from converted file with ffprobe
-DEBUG_USEAAXSAMPLE=false          # AAX sample file to be encoded instead of big Audiobook (fast convert) (false to disable)
-DEBUG_USEAAXCSAMPLE=false         # AAXC sample file (false to disable) dont forget to put 'sample.voucher' in same dir
 DEBUG_STEP="1 month"              # TODO "1 month" "1 week" "1 day" (require DEBUG_STEPPED_RUN=true)
 #### End of user config
 #########################################################################################################################
-#### Source docker_mod.sh for container execution safety
-SCRIPT_DIR=$(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)
-if [[ -f "$SCRIPT_DIR"/docker_mod.sh ]]; then
-  [[ "$DEBUG" == "true" ]] && echo "### DEBUG Load docker_mod.sh for container compat."
-  source "$SCRIPT_DIR"/docker_mod.sh
-elif [[ -n "$container" || "$INCONTAINER" == "true" ]]; then
-  echo "=== ERROR: Running in container without 'docker_mod.sh'"
-  exit 1
-fi
-#########################################################################################################################
 #### Load external config if any
-if [[ -f "$SCRIPT_DIR"/myconfig ]]; then
+if [[ -f "$CONFIG_DIR"/config ]]; then
   [[ "$DEBUG" == "true" ]] && echo "### DEBUG Load custom settings from external file."
-  source "$SCRIPT_DIR"/myconfig 2>/dev/null
+  source "$CONFIG_DIR"/config 2>/dev/null
 fi
 #########################################################################################################################
 #### Check list

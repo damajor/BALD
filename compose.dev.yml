@@ -1,0 +1,12 @@
+services:
+  bald:
+    build: .
+    environment:
+      - TZ=Etc/UTC
+    volumes:
+      - /home/mysuser/.audible:/root/.audible
+      - /home/mysuser/AudioBookShelf/audiobooks:/audiobooks_dest
+      - /home/mysuser/BALD/downloads:/audible_dl
+      - /home/mysuser/BALD/config:/BALD/config
+      - /home/mysuser/BALD/db:/BALD/db
+      - /home/mysuser/BALD/tmp:/BALD/tmp
