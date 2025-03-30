@@ -844,12 +844,11 @@ rm -f "$SCRIPT_DIR/tmp/${NOW}_statistics.txt"
 #########################################################################################################################
 # Converted audiobooks list
 if [[ "$CONVERT_DECRYPTONLY" == "true" ]]; then
-  my_ogabooks=$(find "$DOWNLOAD_DIR/$NOW" -maxdepth 1 -type f -name '*m4b' | sort)
+  my_audiobooks=$(find "$DOWNLOAD_DIR/$NOW" -maxdepth 1 -type f -name '*m4b' | sort)
 else 
-  my_ogabooks=$(find "$DOWNLOAD_DIR/$NOW" -maxdepth 1 -type f -name '*oga' | sort)
+  my_audiobooks=$(find "$DOWNLOAD_DIR/$NOW" -maxdepth 1 -type f -name '*oga' | sort)
 fi
-# my_ogabooks=$(find "$DOWNLOAD_DIR/$NOW" -maxdepth 1 -type f -name '*oga' | sort)
-if [[ -n "$my_ogabooks" ]]; then
+if [[ -n "$my_audiobooks" ]]; then
 #########################################################################################################################
 # Move converted audiobooks to final destination & delete downloaded files
   if [[ "$DEBUG_SKIPMOVEBOOKS" != "true" ]]; then
@@ -931,7 +930,7 @@ if [[ -n "$my_ogabooks" ]]; then
         cd "$(dirname "$audiobook")" && rm -f "${tmp_asin}"*
         cd "$SCRIPT_DIR" || { echo "=== ERROR Cannot cd back to script directory"; exit 255; }
       fi
-    done <<< "$my_ogabooks"
+    done <<< "$my_audiobooks"
     # Update local db
     cat "$SCRIPT_DIR/tmp/${NOW}_local_db.tsv" >> "$LOCAL_DB"
   else
