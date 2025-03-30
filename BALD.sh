@@ -35,6 +35,7 @@ DOWNLOAD_DIR=$SCRIPT_DIR/downloads    # AAX & AAXC Audible files will be downloa
 DEST_BASE_DIR=$SCRIPT_DIR/audiobooks  # Directory for converted files (will be created if it doesnt exist)
 DEBUG_USEAAXSAMPLE=false              # AAX sample file to be encoded instead of big Audiobook (fast convert) (false to disable)
 DEBUG_USEAAXCSAMPLE=false             # AAXC sample file (false to disable) dont forget to put 'sample.voucher' in same dir
+METADATA_TIKA=http://tikahost:9998    # Tika http url without trailing slash short timeouts (1 sec for validation, 2s for lang detection)
 
 #### Source docker_mod.sh for container execution safety
 if [[ -f "$SCRIPT_DIR"/docker_mod.sh ]]; then
@@ -62,7 +63,6 @@ DOWNLOAD_JOBS=2                       # (disabled for now) 1 less errors, 2 seem
 DOWNLOAD_RETRIES=3                    # Careful of not hammering Amazon servers by keeping this param low
 METADATA_PARALLEL=4                   # Number of parallel jobs for metadata workload >= 1 (1 to do sequential conversion)
 METADATA_SOURCE=all                   # 'aax' (source metadata from aax or aaxc) or 'all' (metadata from every possible sources)
-METADATA_TIKA=http://tikahost:9998    # Tika http url without trailing slash short timeouts (1 sec for validation, 2s for lang detection)
 METADATA_CLEAN_AUTHOR_PATTERN='*'     # Read README.md
 METADATA_SINGLENAME_AUTHORS=true      # Keep single name authors or not
 METADATA_SKIP_IFEXISTS=false          # Skip metadata processing if AAXFILE_metadata_new exists
@@ -662,7 +662,7 @@ function build_metadata() {
     if [[ "${#description}" -gt "100" ]]; then
       lang=""
       if [[ "$TIKA_METHOD" == "java" ]]; then
-        lang=$(java -jar "$SCRIPT_DIR/$METADATA_TIKA" -l - <<< "$description")
+        lang=$(java -jar "$METADATA_TIKA" -l - <<< "$description")
       elif [[ "$TIKA_METHOD" == "server" ]]; then
         lang=$(curl -s --connect-timeout 2 -T- ${METADATA_TIKA}/meta/language --header "Accept: text/plain" <<< "$description")
       fi
