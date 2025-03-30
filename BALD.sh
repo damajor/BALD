@@ -80,7 +80,7 @@ DEST_BOOK_NAMING_SCHEME_AUDIOBOOK=(title)                         # Read README.
 # 'remove':                   If audiobook destination directory exists then remove it and recreate it (all existing files in it will be deleted)
 # 'keep':                     If audiobook destination directory exists then create a new one with an incremantal suffix
 # 'false' or any other value: If audiobook destination directory exists then skip processing to next audiobook
-DEST_DIR_OVERWRITE=false
+DEST_DIR_OVERWRITE=true
 DEST_COPY_COVER=true              # Copy cover. If multiples cover sizes are present then select the largest file
 DEST_COPY_PDF=true                # Copy PDF
 DEST_COPY_CHAPTERS_FILE=true      # Copy chapters json file
@@ -738,8 +738,13 @@ function convert_audio() {
   # Decrypt only OR Convert
   if [[ "$CONVERT_DECRYPTONLY" == "true" ]]; then
     ffmpeg -y -nostdin -loglevel warning -stats "${decrypt_param[@]}" \
-           -i "$my_audiobook" -c copy \
-           "$my_audiobook".m4b
+          -i "$my_audiobook" -i "${my_audiobook}_metadata_new" -f ffmetadata \
+          -c copy -map 0:a -map_metadata 1 \
+          "$my_audiobook".m4b
+    if [[ "$DEBUG_METADATA" == "true" ]]; then
+      echo "### DEBUG METADATA: ${my_audiobook}.m4b_metadata"
+      ffprobe -v quiet -print_format default -show_format -show_streams -select_streams a -i "${my_audiobook}.m4b" | grep TAG | sed 's/^TAG://' > "${my_audiobook}.m4b_metadata"
+    fi
   else
     # Fetch language metadata if available (ffmpeg seems buggy setting this from ffmetadata file, but works from command line)
     lang=$(grep language "${my_audiobook}_metadata_new")
