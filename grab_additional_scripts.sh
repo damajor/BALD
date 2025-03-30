@@ -6,14 +6,6 @@
 
 SCRIPT_DIR=$(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)
 
-
-if [[ ! -f "$SCRIPT_DIR"/myconfig ]]; then
-  echo ">>> Creating myconfig file with default parameters..."
-  echo "### PUT YOUR SETTING PARAMETERS HERE ###" > "$SCRIPT_DIR"/myconfig
-                                                                                                                          # TODO CHANGE NAME
-  sed -n "/#### User config/,/#### End of user config/ {/#### User config/b;/#### End of user config/b;p}" "$SCRIPT_DIR"/BALD.sh >> "$SCRIPT_DIR"/myconfig
-fi
-
 if [ ! -f "$SCRIPT_DIR/ogg-image-blobber.sh" ]; then
   echo ">>> Downloading ogg-image-blobber.sh"
   curl -o "$SCRIPT_DIR"/ogg-image-blobber.sh \
@@ -29,6 +21,6 @@ fi
 
 if [[ ! -f "$(find "$SCRIPT_DIR" -name 'tika-app-*.jar')" ]]; then
   echo ">>> Downloading Apache Tika jar"
-  curl -o "$SCRIPT_DIR"/tika-app-2.9.2.jar \
-    https://dlcdn.apache.org/tika/2.9.2/tika-app-2.9.2.jar
+  curl -o "$SCRIPT_DIR"/tika-app.jar \
+    https://dlcdn.apache.org/tika/2.9.3/tika-app-2.9.3.jar
 fi
