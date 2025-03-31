@@ -737,9 +737,9 @@ function convert_audio() {
   fi
   # Decrypt only OR Convert
   if [[ "$CONVERT_DECRYPTONLY" == "true" ]]; then
-    ffmpeg -y -nostdin -loglevel warning -stats "${decrypt_param[@]}" \
-          -i "$my_audiobook" -i "${my_audiobook}_metadata_new" -f ffmetadata \
-          -c copy -map 0:a -map_metadata 1 \
+    # Decrypt the audiobook and copy the stream with new metadata to a new m4b file 
+    ffmpeg -y -nostdin -loglevel warning "${decrypt_param[@]}" -i "$my_audiobook" -i "${my_audiobook}_metadata_new" \
+	  -map 0:a:0 -c copy -dn -map_metadata 1 -map_chapters 1 -movflags use_metadata_tags \
           "$my_audiobook".m4b
     if [[ "$DEBUG_METADATA" == "true" ]]; then
       echo "### DEBUG METADATA: ${my_audiobook}.m4b_metadata"
