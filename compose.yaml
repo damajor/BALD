@@ -2,12 +2,11 @@ services:
   BALD:
     image: quay.io/damajor/bald:latest
     environment:
-      - TZ=Europe/Rome
+      - TZ=Etc/UTC
     volumes:
       - /home/mysuser/.audible:/root/.audible
-      - /home/mysuser/Audible/lib_history:/audible_history
-      - /home/mysuser/Audible/audible_last_sync:/status_file
-      - /home/mysuser/Audible/downloads:/audible_dl
       - /home/mysuser/AudioBookShelf/audiobooks:/audiobooks_dest
-      - /home/mysuser/BALD/myconfig:/BALD/myconfig
-      - /home/mysuser/BALD/tmp:/BALD/tmp
+      - /home/mysuser/BALD/downloads:/audible_dl
+      - /home/mysuser/BALD/config:/BALD/config
+      - /home/mysuser/BALD/db:/BALD/db
+      # - /home/mysuser/BALD/tmp:/BALD/tmp # Uncomment to keep the tmp files outside the container
