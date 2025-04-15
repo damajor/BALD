@@ -28,7 +28,7 @@ if [[ -n "$container" || "$INCONTAINER" == "true" ]]; then
   declare -r DEBUG_USEAAXCSAMPLE="sample.aaxc"
   declare -r LOCAL_DB="/BALD/personal_library.tsv"
 
-  METADATA_TIKA=tika-app-2.9.2.jar
+  METADATA_TIKA=/BALD/tika-app-2.9.3.jar
 else
   [[ "$DEBUG" == "true" ]] && echo "### DEBUG Not in container"
 fi
