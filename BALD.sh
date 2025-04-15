@@ -649,7 +649,7 @@ function build_metadata() {
     if [[ "${#description}" -gt "100" ]]; then
       lang=""
       if [[ "$TIKA_METHOD" == "java" ]]; then
-        lang=$(java -jar "$SCRIPT_DIR/$METADATA_TIKA" -l - <<< "$description")
+        lang=$(java -jar "$METADATA_TIKA" -l - <<< "$description")
       elif [[ "$TIKA_METHOD" == "server" ]]; then
         lang=$(curl -s --connect-timeout 2 -T- ${METADATA_TIKA}/meta/language --header "Accept: text/plain" <<< "$description")
       fi

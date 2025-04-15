@@ -599,7 +599,7 @@ Use Tika for language detection if title description/comments is long enough.
 **(faster)** For remote execution, just put the URL of your Tika server.
 
 Allowed values:  
- - jar file name  
+ - Full path of jar file name  
  - HTTP URL of Tika server
 
 > **Example config:**  
