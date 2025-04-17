@@ -29,6 +29,6 @@ fi
 
 if [[ ! -f "$(find "$SCRIPT_DIR" -name 'tika-app-*.jar')" ]]; then
   echo ">>> Downloading Apache Tika jar"
-  curl -o "$SCRIPT_DIR"/tika-app-2.9.2.jar \
-    https://dlcdn.apache.org/tika/2.9.2/tika-app-2.9.2.jar
+  curl -o "$SCRIPT_DIR"/tika-app-2.9.3.jar \
+    https://dlcdn.apache.org/tika/2.9.3/tika-app-2.9.3.jar
 fi
