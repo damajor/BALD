@@ -181,7 +181,6 @@ fi
 # Check DECRYPTONLY & VBR options
 case $CONVERT_CONTAINER in
   "OGG")
-    # CONVERT_CBRVBR
     if [[ "$CONVERT_CBRVBR" == "cbr" ]]; then
       INTERNAL_VBROPTS=()
     elif [[ "$CONVERT_CBRVBR" == "vbr" ]]; then
