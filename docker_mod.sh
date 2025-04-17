@@ -30,5 +30,5 @@ if [[ -n "$container" || "$INCONTAINER" == "true" ]]; then
 
   METADATA_TIKA=/BALD/tika-app-2.9.3.jar
 else
-  [[ "$DEBUG" == "true" ]] && echo "### DEBUG Not in container"
+  [[ "$DEBUG" == "true" ]] && echo "### DEBUG: Not in container"
 fi
