@@ -49,11 +49,15 @@ METADATA_CLEAN_AUTHOR_PATTERN='*' # Read README.md
 METADATA_SINGLENAME_AUTHORS=true  # Keep single name authors or not
 METADATA_SKIP_IFEXISTS=false      # Skip metadata processing if AAXFILE_metadata_new exists
 METADATA_CHAPTERS=rebuild         # keep (keep aax chapters) / updatetitles (use python, may fail) / rebuild (recreate chapters)
+CONVERT_CONTAINER=OGG             # OGG or MP4 (OGG outputs oga and MP4 outputs M4B files)
 CONVERT_BITRATE=96k               # Bitrate for audio conversion
 CONVERT_BITRATE_RATIO=2/3         # Bitrate ratio from original bitrate (false to disable and always use CONVERT_BITRATE)
+CONVERT_CBRVBR=vbr                # Allowed values for OGG ('cbr', 'vbr'), for MP4 ('cbr', or vbr quality range from '0.1' to '2', one decimal)
 CONVERT_PARALLEL=4                # Number of parallel jobs for conversion >= 1 (1 to do sequential conversion)
 CONVERT_DECRYPTONLY=false         # Only decrypt AAX/AAXC files (no additional metadata inserted, no conversion, just pure copy)
-CONVERT_SKIP_IFOGAEXISTS=false    # Skip OGA exists
+CONVERT_DECRYPTONLY_WITHMETA=false # Allow to add full metadata to original decrypted file
+CONVERT_SKIP_IFOGAEXISTS=false    # Skip OGA exists (only when CONVERT_CONTAINER=OGG)
+CONVERT_SKIP_IFM4BEXISTS=false    # Skip M4B exists (only when CONVERT_CONTAINER=MP4)
 DEST_BASE_DIR=$HOME/AudioBookShelf/audiobooks  # Directory for converted files (will be created if it doesnt exist)
 DEST_DIR_NAMING_SCHEME_AUDIOBOOK=(artist series)                  # Read README.md
 DEST_BOOKDIR_NAMING_SCHEME_AUDIOBOOK=(series-part "% - " title "% {" composer "%}")   # Read README.md
@@ -160,12 +164,59 @@ if [[ "${#DEST_BOOK_NAMING_SCHEME_AUDIOBOOK[@]}" == 0 ]]; then
   echo "=== DEST_BOOK_NAMING_SCHEME_AUDIOBOOK cannot be empty, this is the target audiobook **file** naming scheme."
   reqs_done=false
 fi
+if [[ "$CONVERT_CONTAINER" == "MP4" ]]; then
+  if command -v atomicparsley &> /dev/null || command -v AtomicParsley &> /dev/null; then
+    [[ "$DEBUG" == "true" ]] && echo "=== AtomicParsley is installed."
+  else
+    echo "=== ERROR: $req is not installed."
+    reqs_done=false
+  fi
+fi
 [[ "$reqs_done" == "false" ]] && exit 1
 if [[ ! -f ~/.parallel/will-cite ]]; then
     echo "=== Recommended => run 'parallel --citation' and follow instructions"; exit 1
 fi
 #########################################################################################################################
 #### Internals preparation
+# Check DECRYPTONLY & VBR options
+case $CONVERT_CONTAINER in
+  "OGG")
+    # CONVERT_CBRVBR
+    if [[ "$CONVERT_CBRVBR" == "cbr" ]]; then
+      INTERNAL_VBROPTS=()
+    elif [[ "$CONVERT_CBRVBR" == "vbr" ]]; then
+      INTERNAL_VBROPTS=(-vbr on)
+    else
+      echo "=== ERROR: Wrong CONVERT_CBRVBR setting for OGG container, check documentation. Exiting."
+      exit 1
+    fi ;;
+  "MP4")
+    if [[ "$CONVERT_DECRYPTONLY" != "true" ]]; then
+      if [[ "$CONVERT_CBRVBR" == "cbr" ]]; then
+        INTERNAL_VBROPTS=()
+      elif [[ $CONVERT_CBRVBR =~ ^[0-9]+\.[0-9]$ ]] && (( $(echo "$CONVERT_CBRVBR >= 0.1" | bc -l) && $(echo "$CONVERT_CBRVBR <= 2" | bc -l) )); then
+        INTERNAL_VBROPTS=(-q:a "$CONVERT_CBRVBR")
+      else
+        echo "=== ERROR: Wrong CONVERT_CBRVBR setting for MP4 container, check documentation. Exiting."
+        exit 1
+      fi
+    else
+      INTERNAL_VBROPTS=()
+    fi ;;
+  *)
+    echo "=== ERROR: Cannot create tmp directory. Exiting."
+    exit 1
+    ;;
+esac
+[[ "$DEBUG" == "true" ]] && echo "=== CONVERT_CONTAINER options validated."
+# Check DOWNLOAD_AAX_OPTS
+case "$DOWNLOAD_AAX_OPTS" in
+  --aax-fallback | --aax | --aaxc) ;;
+  *)
+    echo "=== ERROR: Wrong value in DOWNLOAD_AAX_OPTS, check documentation. Exiting."
+    exit 1
+    ;;
+esac
 ACTIVATION_BYTES=$(jq -r .activation_bytes ~/.audible/${AUDIBLECLI_PROFILE}.json)
 [[ -z "$ACTIVATION_BYTES" || "$ACTIVATION_BYTES" == "null" ]] && ACTIVATION_BYTES=$(audible activation-bytes | tail -1)
 # Exit early if activation-bytes is not set
@@ -311,10 +362,13 @@ export DEST_COPY_COVER
 export DEST_COPY_PDF
 export DEST_COPY_CHAPTERS_FILE
 export DEST_COPY_ANNOT_FILE
+export CONVERT_CONTAINER
 export CONVERT_BITRATE
 export CONVERT_BITRATE_RATIO
 export CONVERT_SKIP_IFOGAEXISTS
+export CONVERT_SKIP_IFM4BEXISTS
 export CONVERT_DECRYPTONLY
+export CONVERT_DECRYPTONLY_WITHMETA
 export METADATA_SOURCE
 export METADATA_TIKA
 export METADATA_SINGLENAME_AUTHORS
@@ -326,6 +380,7 @@ export DEBUG_USEAAXSAMPLE
 export DEBUG_USEAAXCSAMPLE
 export DEBUG_METADATA
 export DEBUG_DONTEMBEDCOVER
+export INTERNAL_VBROPTS
 #########################################################################################################################
 # Clean Author metadata based on pattern (remove translator/editor/etc...)
 # And remove single name authors (if enabled in user settings)
@@ -448,20 +503,25 @@ function remove_file() {
 # $2 destination directory
 # $3 destination file name
 function move_files() {
-  local tmp chapters_file annots_file pdf_file
+  local tmp chapters_file annots_file pdf_file ext
   tmp=$(basename "$1")
   dirnam=$(dirname "$1")
   title=${tmp%-*}
   chapters_file="$dirnam/$title-chapters.json"
   annots_file="$dirnam/$title-annotations.json"
   pdf_file="$dirnam/$title.pdf"
-  cover_file=$(du "$dirnam/${title}"*jpg | sort -nr | head -1 | cut -f2)
+  cover_file=$(du "$dirnam/${title}"*jpg 2>/dev/null | sort -nr | head -1 | cut -f2)
+  if [[ "$CONVERT_CONTAINER" == "OGG" ]]; then
+    ext=ogg
+  elif [[ "$CONVERT_CONTAINER" == "MP4" ]]; then
+    ext=m4b
+  fi
   # Move audio file
   if [[ "$DEBUG" == "true" ]]; then
     echo "### DEBUG: Copy converted audiobook: $cover_file"
-    cp "$1" "$2/$3.oga"
+    cp "$1" "$2/$3.$ext"
   else
-    mv "$1" "$2/$3.oga"
+    mv "$1" "$2/$3.$ext"
   fi
   # Copy cover
   if [[ "$DEST_COPY_COVER" == true ]]; then
@@ -681,9 +741,10 @@ export -f build_metadata
 # Convert AAX/AAXC files & insert metadata
 # $1 Audiobook/Podcast file (with full path)
 function convert_audio() {
-  local my_audiobook title asin type decrypt_param tmp voucher aaxc_iv aaxc_key input_file lang langopt original_bitrate new_bitrate
+  local my_audiobook title asin type decrypt_param tmp voucher aaxc_iv aaxc_key input_file lang langopt original_bitrate new_bitrate dirnam cover_file
   my_audiobook=$1
   tmp=$(basename "$my_audiobook")
+  dirnam=$(dirname "$my_audiobook")
   title=${tmp%-*}
   asin=${tmp%%_*}
   type=${tmp##*.}
@@ -706,6 +767,10 @@ function convert_audio() {
     echo "=== OGA file exists (but not moved), skipping conversion..."
     return
   fi
+  if [[ "$CONVERT_SKIP_IFM4BEXISTS" == "true" && -f "${my_audiobook}.m4b" ]]; then
+    echo "=== M4B file exists (but not moved), skipping conversion..."
+    return
+  fi
   # Preparing ffmpeg decrypting opts
   if [[ "$type" == "aaxc" ]]; then
     if [[ "$DEBUG_USEAAXCSAMPLE" != "false" && -f "$DEBUG_USEAAXCSAMPLE" ]]; then
@@ -723,38 +788,64 @@ function convert_audio() {
     fi
     decrypt_param=(-activation_bytes "${ACTIVATION_BYTES}")
   fi
-  # Decrypt only OR Convert
-  if [[ "$CONVERT_DECRYPTONLY" == "true" ]]; then
-    ffmpeg -y -nostdin -loglevel warning -stats "${decrypt_param[@]}" \
-           -i "$my_audiobook" -c copy \
-           "$my_audiobook".m4b
-  else
-    # Fetch language metadata if available (ffmpeg seems buggy setting this from ffmetadata file, but works from command line)
-    lang=$(grep language "${my_audiobook}_metadata_new")
-    langopt=()
-    if [[ -n "$lang" ]]; then
-      langopt=(-metadata:s:0 "$lang")
-    fi
-    # Custom bitrate
-    original_bitrate=$(jq -r '.media.track[] | select(."@type" == "Audio") | .BitRate' "${my_audiobook}_mediainfo.json")
-    if [[ "$CONVERT_BITRATE_RATIO" != "false" ]]; then
-      new_bitrate="$(echo "scale=10; $original_bitrate * $CONVERT_BITRATE_RATIO / 1024" | bc | awk '{print int($1+0.5)}')"k
-    else
-      new_bitrate="$CONVERT_BITRATE"
-    fi
-    # Convert file to ogg (opus) using ffmpeg
-    ffmpeg -y -nostdin -loglevel warning -stats "${decrypt_param[@]}" \
-          -i "$input_file" -i "${my_audiobook}_metadata_new" \
-          -map_metadata 1 -map_chapters 1 \
-          "${langopt[@]}" \
-          -c:v copy -c:a libopus -b:a "$new_bitrate" -vbr on \
-          "${my_audiobook}.oga"
-    # Debug metadata
-    if [[ "$DEBUG_METADATA" == "true" ]]; then
-      echo "### DEBUG METADATA: ${my_audiobook}.oga_metadata"
-      ffprobe -v quiet -print_format default -show_format -show_streams -select_streams a -i "${my_audiobook}.oga" | grep TAG | sed 's/^TAG://' > "${my_audiobook}.oga_metadata"
-    fi
+  # Fetch language metadata if available (ffmpeg seems buggy setting this from ffmetadata file, but works from command line)
+  lang=$(grep language "${my_audiobook}_metadata_new")
+  langopt=()
+  if [[ -n "$lang" ]]; then
+    langopt=(-metadata:s:0 "$lang")
   fi
+  # Custom bitrate
+  original_bitrate=$(jq -r '.media.track[] | select(."@type" == "Audio") | .BitRate' "${my_audiobook}_mediainfo.json")
+  if [[ "$CONVERT_BITRATE_RATIO" != "false" ]]; then
+    new_bitrate=(-b:a "$(echo "scale=10; $original_bitrate * $CONVERT_BITRATE_RATIO / 1024" | bc | awk '{print int($1+0.5)}')"k)
+  else
+    new_bitrate=(-b:a "$CONVERT_BITRATE")
+  fi
+  case $CONVERT_CONTAINER in
+    OGG)
+      # Convert file to ogg (opus) using ffmpeg
+      ffmpeg -y -nostdin -loglevel warning -stats "${decrypt_param[@]}" \
+            -i "$input_file" -i "${my_audiobook}_metadata_new" \
+            -map_metadata 1 -map_chapters 1 \
+            "${langopt[@]}" \
+            -c:v copy -c:a libopus "${new_bitrate[@]}" "${INTERNAL_VBROPTS[@]}" \
+            "${my_audiobook}.oga"
+      # Debug metadata
+      if [[ "$DEBUG_METADATA" == "true" ]]; then
+        echo "### DEBUG METADATA: ${my_audiobook}.oga_metadata"
+        ffprobe -v quiet -print_format default -show_format -show_streams -select_streams a -i "${my_audiobook}.oga" | grep TAG | sed 's/^TAG://' > "${my_audiobook}.oga_metadata"
+      fi ;;
+    MP4)
+      # Decrypt only
+      if [[ "$CONVERT_DECRYPTONLY_WITHMETA" == "false" ]]; then
+        metadataopts=()
+      else
+        metadataopts=(-i "${my_audiobook}_metadata_new" -movflags use_metadata_tags -map_metadata 1 -map_chapters 1 "${langopt[@]}")
+      fi
+      if [[ "$CONVERT_DECRYPTONLY" == "true" ]]; then
+        new_bitrate=()
+        INTERNAL_VBROPTS=(-c:a copy)
+      fi
+      # Convert file to m4b using ffmpeg
+      ffmpeg -y -nostdin -loglevel warning -stats "${decrypt_param[@]}" \
+            -i "$input_file" \
+            ${metadataopts[@]} \
+            -c:v copy "${new_bitrate[@]}" "${INTERNAL_VBROPTS[@]}" \
+            "${my_audiobook}.m4b"
+      # Add best downloaded cover
+      if [[ "$DEBUG_DONTEMBEDCOVER" != "true" ]]; then
+        echo PLOP
+        cover_file=$(du "$dirnam/${title}"*jpg | sort -nr | head -1 | cut -f2)
+        if [[ -f "$cover_file" ]]; then
+          AtomicParsley "${my_audiobook}.m4b" --artwork "$cover_file" --overWrite
+        fi
+      fi
+      # Debug metadata
+      if [[ "$DEBUG_METADATA" == "true" ]]; then
+        echo "### DEBUG METADATA: ${my_audiobook}.m4b_metadata"
+        ffprobe -v quiet -print_format default -show_format -show_streams -select_streams a -i "${my_audiobook}.m4b" | grep TAG | sed 's/^TAG://' > "${my_audiobook}.m4b_metadata"
+      fi ;;
+  esac
 }
 export -f convert_audio
 #########################################################################################################################
@@ -811,12 +902,25 @@ rm -f "$SCRIPT_DIR/tmp/${NOW}_statistics.txt"
     fi
   done < <(find "$DOWNLOAD_DIR/$NOW" -name '*aax' -o -name '*aaxc')
   echo "> Total OGA:             $(find "$DOWNLOAD_DIR/$NOW" -name '*oga' | wc -l)"
-  echo "> Missing OGA (ignore this if processing was skipped):"
-  while read -r file; do
-    if [[ ! -f "${file}.oga" ]]; then
-      echo "  =>  ${file}"
-    fi
-  done < <(find "$DOWNLOAD_DIR/$NOW" -name '*aax' -o -name '*aaxc')
+  echo "> Total M4B:             $(find "$DOWNLOAD_DIR/$NOW" -name '*m4b' | wc -l)"
+  case $CONVERT_CONTAINER in
+    OGG)
+      echo "> Missing OGA (ignore this if processing was skipped or if MP4 is selected):"
+      while read -r file; do
+        if [[ ! -f "${file}.oga" ]]; then
+          echo "  =>  ${file}"
+        fi
+      done < <(find "$DOWNLOAD_DIR/$NOW" -name '*aax' -o -name '*aaxc')
+      ;;
+    MP4)
+      echo "> Missing M4B (ignore this if processing was skipped or if OGG is selected):"
+      while read -r file; do
+        if [[ ! -f "${file}.m4b" ]]; then
+          echo "  =>  ${file}"
+        fi
+      done < <(find "$DOWNLOAD_DIR/$NOW" -name '*aax' -o -name '*aaxc')
+      ;;
+  esac
   echo "> Missing AAX/AAXC:"
   while read -r file; do
     tmp=$(basename "${file}")
@@ -827,12 +931,26 @@ rm -f "$SCRIPT_DIR/tmp/${NOW}_statistics.txt"
     fi
   done < <(find "$DOWNLOAD_DIR/$NOW" -name '*chapters.json')
   echo "> Total AAX/AAXC size:   $(du -hc "$DOWNLOAD_DIR/$NOW"/*aax "$DOWNLOAD_DIR/$NOW"/*aaxc 2>/dev/null | tail -n 1 | cut -f 1)"
-  echo "> Total OGA size:        $(du -hc "$DOWNLOAD_DIR/$NOW"/*oga 2>/dev/null | tail -n 1 | cut -f 1)"
+  case $CONVERT_CONTAINER in
+    OGG)
+      echo "> Total OGA size:        $(du -hc "$DOWNLOAD_DIR/$NOW"/*oga 2>/dev/null | tail -n 1 | cut -f 1)"
+      ;;
+    MP4)
+      echo "> Total MP4 size:        $(du -hc "$DOWNLOAD_DIR/$NOW"/*m4b 2>/dev/null | tail -n 1 | cut -f 1)"
+      ;;
+  esac
 } > "$SCRIPT_DIR/tmp/${NOW}_statistics.txt"
 #########################################################################################################################
 # Converted audiobooks list
-my_ogabooks=$(find "$DOWNLOAD_DIR/$NOW" -maxdepth 1 -type f -name '*oga' | sort)
-if [[ -n "$my_ogabooks" ]]; then
+case $CONVERT_CONTAINER in
+  OGG)
+    my_audiobooks=$(find "$DOWNLOAD_DIR/$NOW" -maxdepth 1 -type f -name '*oga' | sort)
+    ;;
+  MP4)
+    my_audiobooks=$(find "$DOWNLOAD_DIR/$NOW" -maxdepth 1 -type f -name '*m4b' | sort)
+    ;;
+esac
+if [[ -n "$my_audiobooks" ]]; then
 #########################################################################################################################
 # Move converted audiobooks to final destination & delete downloaded files
   if [[ "$DEBUG_SKIPMOVEBOOKS" != "true" ]]; then
@@ -914,9 +1032,9 @@ if [[ -n "$my_ogabooks" ]]; then
         cd "$(dirname "$audiobook")" && rm -f "${tmp_asin}"*
         cd "$SCRIPT_DIR" || { echo "=== ERROR Cannot cd back to script directory"; exit 255; }
       fi
-    done <<< "$my_ogabooks"
+    done <<< "$my_audiobooks"
     # Update local db
-    cat "$SCRIPT_DIR/tmp/${NOW}_local_db.tsv" >> "$LOCAL_DB"
+    cat "$SCRIPT_DIR/tmp/${NOW}_local_db.tsv" >> "$LOCAL_DB" 2>/dev/null
   else
     [[ "$DEBUG" == "true" ]] && echo "### DEBUG MOVE & RENAME AUDIOBOOKS SKIPPED"
   fi
@@ -931,7 +1049,7 @@ fi
 echo ">>> Basic statistics"
 if [[ -f "$SCRIPT_DIR/tmp/${NOW}_statistics.txt" ]]; then
   cat "$SCRIPT_DIR/tmp/${NOW}_statistics.txt"
-  echo "> Total moved OGA:       $(wc -l "$SCRIPT_DIR/tmp/${NOW}_local_db.tsv" 2>/dev/null | cut -f 1 -d ' ')"
+  echo "> Total moved OGA/M4B:       $(wc -l "$SCRIPT_DIR/tmp/${NOW}_local_db.tsv" 2>/dev/null | cut -f 1 -d ' ')"
 else
   echo "=== Statistics file not found."
 fi
