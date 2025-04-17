@@ -41,6 +41,7 @@ DOWNLOAD_WISHLIST=false           # Wishlist is downloaded in HIST_LIB_DIR
 DOWNLOAD_JOBS=2                   # (disabled for now) 1 less errors, 2 seems good, higher is hazardous
 DOWNLOAD_RETRIES=3                # Careful of not hammering Amazon servers by keeping this param low
 DOWNLOAD_DIR=$HOME/Audible/MyDownloads # AAX & AAXC Audible files will be downloaded here
+DOWNLOAD_AAX_OPTS=--aax-fallback  # Download option for audible-cli (one of: --aax-fallback or --aax or --aaxc)
 METADATA_PARALLEL=4               # Number of parallel jobs for metadata workload >= 1 (1 to do sequential conversion)
 METADATA_SOURCE=all               # 'aax' (source metadata from aax or aaxc) or 'all' (metadata from every possible sources)
 METADATA_TIKA=http://tikahost:9998 # Tika http url without trailing slash short timeouts (1 sec for validation, 2s for lang detection)
@@ -267,8 +268,8 @@ if [[ "$DEBUG_SKIPDOWNLOADS" != "true" ]]; then
     fi
     for (( i=1; i<=DOWNLOAD_RETRIES; i++)); do
       echo "=== Download (try $i/$DOWNLOAD_RETRIES): $asin"
-      [[ "$DEBUG" != "true" ]] && echo "audible download -f asin_ascii -j $DOWNLOAD_JOBS --timeout 40 --aax-fallback --ignore-errors $DOWNLOAD_PDF_OPT ${DOWNLOAD_COVERS_OPT[*]} --chapter $DOWNLOAD_ANNOT_OPT -o $DOWNLOAD_DIR/$NOW -a $asin"
-      audible download -f asin_ascii -j $DOWNLOAD_JOBS --timeout 40 --aax-fallback --ignore-errors $DOWNLOAD_PDF_OPT "${DOWNLOAD_COVERS_OPT[@]}" --chapter --chapter-type Flat $DOWNLOAD_ANNOT_OPT -o "$DOWNLOAD_DIR/$NOW" -a "$asin" | tee "$SCRIPT_DIR/tmp/${NOW}_download_${asin}.log" | grep --color -e '^error: Error downloading' -e '^'
+      [[ "$DEBUG" != "true" ]] && echo "audible download -f asin_ascii -j $DOWNLOAD_JOBS --timeout 40 $DOWNLOAD_AAX_OPTS --ignore-errors $DOWNLOAD_PDF_OPT ${DOWNLOAD_COVERS_OPT[*]} --chapter $DOWNLOAD_ANNOT_OPT -o $DOWNLOAD_DIR/$NOW -a $asin"
+      audible download -f asin_ascii -j $DOWNLOAD_JOBS --timeout 40 "$DOWNLOAD_AAX_OPTS" --ignore-errors $DOWNLOAD_PDF_OPT "${DOWNLOAD_COVERS_OPT[@]}" --chapter --chapter-type Flat $DOWNLOAD_ANNOT_OPT -o "$DOWNLOAD_DIR/$NOW" -a "$asin" | tee "$SCRIPT_DIR/tmp/${NOW}_download_${asin}.log" | grep --color -e '^error: Error downloading' -e '^'
       if grep -q '^error: Error downloading' "$SCRIPT_DIR/tmp/${NOW}_download_${asin}.log"; then
         echo "=== ERROR detected during try $i/$DOWNLOAD_RETRIES, while downloading $asin,  retrying!"
         continue
