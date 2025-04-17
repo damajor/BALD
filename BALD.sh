@@ -829,7 +829,7 @@ function convert_audio() {
       # Convert file to m4b using ffmpeg
       ffmpeg -y -nostdin -loglevel warning -stats "${decrypt_param[@]}" \
             -i "$input_file" \
-            ${metadataopts[@]} \
+            "${metadataopts[@]}" \
             -c:v copy "${new_bitrate[@]}" "${INTERNAL_VBROPTS[@]}" \
             "${my_audiobook}.m4b"
       # Add best downloaded cover
