@@ -611,7 +611,7 @@ function build_metadata() {
   art=$(du "$(dirname "$1")/${asin}"*jpg | sort -nr | head -1 | cut -f2)
   echo "=== Building metadata for $title ($asin)"
   # Extract metadata
-  if ! ffmpeg -y -nostdin -loglevel warning -i "$1" -f ffmetadata "${1}_metadata"; then
+  if ! ffmpeg -y -nostdin -loglevel fatal -i "$1" -f ffmetadata "${1}_metadata"; then
     echo "=== ERROR: ffmpeg failed to extract metadata from $1, skiping..."
     return
   fi
@@ -803,7 +803,7 @@ function convert_audio() {
   case $CONVERT_CONTAINER in
     OGG)
       # Convert file to ogg (opus) using ffmpeg
-      ffmpeg -y -nostdin -loglevel warning -stats "${decrypt_param[@]}" \
+      ffmpeg -y -nostdin -loglevel fatal "$FFMPEG_STATS" "${decrypt_param[@]}" \
             -i "$input_file" -i "${my_audiobook}_metadata_new" \
             -map_metadata 1 -map_chapters 1 \
             "${langopt[@]}" \
@@ -826,17 +826,17 @@ function convert_audio() {
         INTERNAL_VBROPTS=(-c:a copy)
       fi
       # Convert file to m4b using ffmpeg
-      ffmpeg -y -nostdin -loglevel warning -stats "${decrypt_param[@]}" \
+      ffmpeg -y -nostdin -loglevel fatal "$FFMPEG_STATS" "${decrypt_param[@]}" \
             -i "$input_file" \
             "${metadataopts[@]}" \
             -c:v copy "${new_bitrate[@]}" "${INTERNAL_VBROPTS[@]}" \
             "${my_audiobook}.m4b"
       # Add best downloaded cover
       if [[ "$DEBUG_DONTEMBEDCOVER" != "true" ]]; then
-        echo PLOP
         cover_file=$(du "$dirnam/${title}"*jpg | sort -nr | head -1 | cut -f2)
         if [[ -f "$cover_file" ]]; then
-          AtomicParsley "${my_audiobook}.m4b" --artwork "$cover_file" --overWrite
+          echo "=== Embedding best quality cover into M4B file"
+          AtomicParsley "${my_audiobook}.m4b" --artwork "$cover_file" --overWrite >/dev/null
         fi
       fi
       # Debug metadata

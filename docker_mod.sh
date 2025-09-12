@@ -29,8 +29,10 @@ if [[ -n "$container" || "$INCONTAINER" == "true" ]]; then
   declare -r LOCAL_DB="/BALD/personal_library.tsv"
 
   METADATA_TIKA=/BALD/tika-app-2.9.3.jar
+  FFMPEG_STATS=-nostats
   PARALLEL_PROGRESS=
 else
+  FFMPEG_STATS=-stats
   PARALLEL_PROGRESS=--bar
   [[ "$DEBUG" == "true" ]] && echo "### DEBUG: Not in container"
 fi
