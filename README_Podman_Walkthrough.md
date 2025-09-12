@@ -68,27 +68,27 @@ BALD requires a bunch of pre-existing files and directory. These are:
 
 We will create a directory to host all of these.
 
-- Base directory:         `mkdir /home/YOURUSER/BALD`
-- History directory:      `mkdir /home/YOURUSER/BALD/audible_history`
+- Base directory:         `mkdir -p /home/YOURUSER/BALD`
+- History directory:      `mkdir -p /home/YOURUSER/BALD/audible_history`
 - BALD Status file:       `touch /home/YOURUSER/BALD/status_file`
-- Download directory:     `mkdir /home/YOURUSER/BALD/audible_dl`
-- Destination library:    `mkdir /home/YOURUSER/Audiobookshelf/audiobooks`
+- Download directory:     `mkdir -p /home/YOURUSER/BALD/audible_dl`
+- Destination library:    `mkdir -p /home/YOURUSER/Audiobookshelf/audiobooks`
 - Local database:         `touch /home/YOURUSER/BALD/personal_library.tsv`
 - BALD Config file:       `touch /home/YOURUSER/BALD/myconfig`
-- Logs directory:         `mkdir /home/YOURUSER/BALD/tmp`
-- Audible-cli config dir: `mkdir /home/YOURUSER/BALD/audible-cli`
+- Logs directory:         `mkdir -p /home/YOURUSER/BALD/tmp`
+- Audible-cli config dir: `mkdir -p /home/YOURUSER/BALD/audible-cli`
 
 > *For copy/paste convenience:*
 > ```
-> mkdir /home/YOURUSER/BALD
-> mkdir /home/YOURUSER/BALD/audible_history
+> mkdir -p /home/YOURUSER/BALD
+> mkdir -p /home/YOURUSER/BALD/audible_history
 > touch /home/YOURUSER/BALD/status_file
-> mkdir /home/YOURUSER/BALD/audible_dl
-> mkdir /home/YOURUSER/Audiobookshelf/audiobooks
+> mkdir -p /home/YOURUSER/BALD/audible_dl
+> mkdir -p /home/YOURUSER/Audiobookshelf/audiobooks
 > touch /home/YOURUSER/BALD/personal_library.tsv
 > touch /home/YOURUSER/BALD/myconfig
-> mkdir /home/YOURUSER/BALD/tmp
-> mkdir /home/YOURUSER/BALD/audible-cli
+> mkdir -p /home/YOURUSER/BALD/tmp
+> mkdir -p /home/YOURUSER/BALD/audible-cli
 > ```
 
 ## Audible CLI setup
@@ -243,6 +243,17 @@ Open the configuration file `/home/YOURUSER/BALD/myconfig` with your favorite ed
 
 A lot more settings can be changed or tuned to perfectly match your needs, check the main `README.md` file.
 
+> *Note:* The following `myconfig` settings are ignored as they are managed by mapping podman volumes.
+> ```
+> HIST_LIB_DIR
+> STATUS_FILE
+> DOWNLOAD_DIR
+> DEST_BASE_DIR
+> DEBUG_USEAAXSAMPLE
+> DEBUG_USEAAXCSAMPLE
+> LOCAL_DB
+> ```
+
 # Run BALD !!!
 
 The first run can take a while as BALD will download and convert your entire library, go take a break after starting it :).
@@ -318,6 +329,7 @@ Image=quay.io/damajor/bald:latest
 ContainerName=bald
 HostName=bald
 AutoUpdate=registry
+LogDriver=passthrough
 Volume=/home/YOURUSER/BALD/audible_history:/audible_history:Z
 Volume=/home/YOURUSER/BALD/status_file:/status_file:Z
 Volume=/home/YOURUSER/BALD/audible_dl:/audible_dl:Z

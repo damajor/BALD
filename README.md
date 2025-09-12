@@ -376,6 +376,7 @@ Image=quay.io/damajor/bald:latest
 ContainerName=bald
 HostName=bald
 AutoUpdate=registry
+LogDriver=passthrough
 Volume=/home/myuser/Audible/lib_history:/audible_history:Z
 Volume=/home/myuser/Audible/audible_last_sync:/status_file:Z
 Volume=/home/myuser/Audible/downloads:/audible_dl:Z
