@@ -344,7 +344,7 @@ Possible values are:
 
 ## CONVERT_CONTAINER
 
-This parameter allow the user to select the output format of the converted audiobooks.
+This parameter allows the user to select the output format of the converted audiobooks.
 
 Allowed values:  
 - OGG => Convert audiobooks to OGA files
@@ -376,7 +376,7 @@ Allowed values:
 
 ## CONVERT_CBRVBR
 
-This parameter allow the user to select VBR or CBR for the final encoding.
+This parameter allows the user to select VBR or CBR for the final encoding.
 OGG and MP4 containers accepts different values.
 
 Allowed values:
