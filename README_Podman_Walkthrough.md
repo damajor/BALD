@@ -1,7 +1,7 @@
 BALD Complete walkthrough for Podman
 ====================================
 
-This guide will cover full BALD walkthrough on standard Linux with Podman and also on Linux with SELinux enabled (Windows and Ubuntu apparmor are not a part of this guide).
+This guide will cover full BALD walkthrough on standard Linux with Podman and also on Linux with SELinux enabled (Windows and Ubuntu AppArmor are not a part of this guide).
 
 For Windows Podman please refer to [Podman for Windows](https://github.com/containers/podman/blob/main/docs/tutorials/podman-for-windows.md) (scheduling is on your own).
 
@@ -204,7 +204,7 @@ Please insert the copied url (after login):
 
 Follow carefully the instructions on screen to get a valid auth file for Audible.
 
-Finish the quickstart process by pressing Enter when asked about it.
+Finish the quick-start process by pressing Enter when asked about it.
 
 ## Create default BALD configuration file
 

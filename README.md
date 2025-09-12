@@ -96,8 +96,8 @@ In case of a problem please open an issue on GitHub <https://github.com/damajor/
 
 > **Notes regarding MP4:**
 > While MP4 conversion is supported, OGA is recommended.
-> Thumbnails on MP4 may not always works.
-> Moreover for high quality MP4/AAC encoding, ffmpeg requires to be compiled with non-free codecs. OGG Vorbis gives better results, better compression, better compression quality out of the box and good compatibility ;)
+> Thumbnails on MP4 may not always work.
+> Moreover, for high quality MP4/AAC encoding, FFmpeg requires to be compiled with non-free codecs. OGG Vorbis gives better results, better compression, better compression quality out of the box and good compatibility ;)
 
 # Feature details
 
@@ -357,7 +357,7 @@ Run with:
 
 ### Podman Quadlet (systemd integration)
 
-Below is an example systemd quadlet for a oneshot BALD service.
+Below is an example systemd quadlet for an oneshot BALD service.
 
 1. Create a file `/home/YOURUSER/.config/containers/systemd/bald.container` with the content below (change the path to your local paths)
 
