@@ -859,7 +859,8 @@ if [[ -n "$my_audiofiles" ]]; then
     else
       echo ">>> Building audiobooks metadata ($METADATA_PARALLEL jobs)"
     fi
-    parallel --bar -j"$METADATA_PARALLEL" build_metadata <<< "$my_audiofiles"
+    parallel -j"$METADATA_PARALLEL" "$PARALLEL_PROGRESS" build_metadata <<< "$my_audiofiles"
+
   else
     [[ "$DEBUG" == "true" ]] && echo "### DEBUG AUDIOBOOKS METADATA SKIPPED"
   fi
@@ -872,7 +873,7 @@ if [[ -n "$my_audiofiles" ]]; then
     else
       echo ">>> Convert audiobooks ($CONVERT_PARALLEL jobs)"
     fi
-    parallel --bar -j"$CONVERT_PARALLEL" convert_audio <<< "$my_audiofiles"
+    parallel -j"$CONVERT_PARALLEL" "$PARALLEL_PROGRESS" convert_audio <<< "$my_audiofiles"
   else
     [[ "$DEBUG" == "true" ]] && echo "### DEBUG AUDIOBOOKS CONVERSION SKIPPED"
   fi
