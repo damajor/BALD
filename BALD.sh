@@ -41,6 +41,7 @@ DOWNLOAD_WISHLIST=false           # Wishlist is downloaded in HIST_LIB_DIR
 DOWNLOAD_JOBS=2                   # (disabled for now) 1 less errors, 2 seems good, higher is hazardous
 DOWNLOAD_RETRIES=3                # Careful of not hammering Amazon servers by keeping this param low
 DOWNLOAD_DIR=$HOME/Audible/MyDownloads # AAX & AAXC Audible files will be downloaded here
+DOWNLOAD_CLEAN_EMPTY_DIRS=true    # Clean empty download directories
 DOWNLOAD_AAX_OPTS=--aax-fallback  # Download option for audible-cli (one of: --aax-fallback or --aax or --aaxc)
 METADATA_PARALLEL=4               # Number of parallel jobs for metadata workload >= 1 (1 to do sequential conversion)
 METADATA_SOURCE=all               # 'aax' (source metadata from aax or aaxc) or 'all' (metadata from every possible sources)
@@ -1054,6 +1055,9 @@ else
   echo "=== Statistics file not found."
 fi
 #########################################################################################################################
-# Remove logs
+# Remove logs & Clean up
 [[ "$CLEAN_TMPLOGS" == "true" ]] && rm -f "$SCRIPT_DIR/tmp/${NOW}"_*
-
+# Remove empty download directories
+if [[ "$DOWNLOAD_CLEAN_EMPTY_DIRS" == "true" ]]; then
+  find "$DOWNLOAD_DIR" -type d -empty | remove_file
+fi

@@ -31,6 +31,7 @@ Table of content
   - [DOWNLOAD_JOBS](#download_jobs)
   - [DOWNLOAD_RETRIES](#download_retries)
   - [DOWNLOAD_DIR](#download_dir)
+  - [DOWNLOAD_CLEAN_EMPTY_DIRS](#download_clean_empty_dirs)
   - [DOWNLOAD_AAX_OPTS](#download_aax_opts)
 - [Metadata related settings](#metadata-related-settings)
   - [METADATA_PARALLEL](#metadata_parallel)
@@ -233,6 +234,17 @@ AAX & AAXC Audible files will be downloaded here
 
 > **Note:**
 > This setting is ignored when using the container. You MUST use volume mapping instead.
+
+## DOWNLOAD_CLEAN_EMPTY_DIRS
+
+Tells the script to clean all empty download directories if any. This is pretty useful if you run the script daily and do not want to keep the empty directories.
+
+Allowed values:  
+- 'true' => Delete empty directories (default behavior)
+- 'false' or anything else => Keep all created download directories
+
+> **Example config:**  
+> `DOWNLOAD_CLEAN_EMPTY_DIRS=true`
 
 ## DOWNLOAD_AAX_OPTS
 
