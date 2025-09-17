@@ -804,7 +804,8 @@ function convert_audio() {
   case $CONVERT_CONTAINER in
     OGG)
       # Convert file to ogg (opus) using ffmpeg
-      ffmpeg -y -nostdin -loglevel fatal "$FFMPEG_STATS" "${decrypt_param[@]}" \
+      # shellcheck disable=SC2086
+      ffmpeg -y -nostdin -loglevel fatal $FFMPEG_STATS "${decrypt_param[@]}" \
             -i "$input_file" -i "${my_audiobook}_metadata_new" \
             -map_metadata 1 -map_chapters 1 \
             "${langopt[@]}" \
@@ -827,7 +828,8 @@ function convert_audio() {
         INTERNAL_VBROPTS=(-c:a copy)
       fi
       # Convert file to m4b using ffmpeg
-      ffmpeg -y -nostdin -loglevel fatal "$FFMPEG_STATS" "${decrypt_param[@]}" \
+      # shellcheck disable=SC2086
+      ffmpeg -y -nostdin -loglevel fatal $FFMPEG_STATS "${decrypt_param[@]}" \
             -i "$input_file" \
             "${metadataopts[@]}" \
             -c:v copy "${new_bitrate[@]}" "${INTERNAL_VBROPTS[@]}" \
