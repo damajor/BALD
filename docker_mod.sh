@@ -32,7 +32,7 @@ if [[ -n "$container" || "$INCONTAINER" == "true" ]]; then
   FFMPEG_STATS=-nostats
   PARALLEL_PROGRESS=
 else
+  [[ "$DEBUG" == "true" ]] && echo "### DEBUG: Not in container"
   FFMPEG_STATS=-stats
   PARALLEL_PROGRESS=--bar
-  [[ "$DEBUG" == "true" ]] && echo "### DEBUG: Not in container"
 fi
