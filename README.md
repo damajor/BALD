@@ -6,6 +6,8 @@ geometry: margin=2cm
 ---
 
 [![Docker Repository on Quay](https://quay.io/repository/damajor/bald/status "Docker Repository on Quay")](https://quay.io/repository/damajor/bald)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/damajor/BALD)
+
 
     BBBBBBBBBBBBBBBBB               AAA               LLLLLLLLLLL             DDDDDDDDDDDDD        
     B::::::::::::::::B             A:::A              L:::::::::L             D::::::::::::DDD     
