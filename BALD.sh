@@ -701,7 +701,9 @@ function build_metadata() {
       esac
     done
     # publisher
-    update_metadata "$1"_metadata_new publisher "$(jq -r '.media.track[] | select(."@type" == "General") | .extra.pub' "${1}_mediainfo.json")"
+    tmp_pub=$(jq -r '.media.track[] | select(."@type" == "General") | .extra.pub' "${1}_mediainfo.json")
+    [[ "$tmp_pub" == "null" ]] && tmp_pub=$(jq -r '.media.track[] | select(."@type" == "General") | .Publisher' "${1}_mediainfo.json")
+    update_metadata "$1"_metadata_new publisher "$tmp_pub"
     # description (afaik ffmpeg 7.1 cant write 'description' instead uses 'comment' to write description)
     description=$(jq -r '.media.track[] | select(."@type" == "General") | .Track_More' "${1}_mediainfo.json")
     update_metadata "${1}_metadata_new" comment "$description"
