@@ -1061,5 +1061,7 @@ fi
 [[ "$CLEAN_TMPLOGS" == "true" ]] && rm -f "$SCRIPT_DIR/tmp/${NOW}"_*
 # Remove empty download directories
 if [[ "$DOWNLOAD_CLEAN_EMPTY_DIRS" == "true" ]]; then
-  find "$DOWNLOAD_DIR" -type d -empty | remove_file
+  find "$DOWNLOAD_DIR" -type d -empty -print0 | while IFS= read -r -d '' dir; do
+    remove_file "$dir"
+  done
 fi
