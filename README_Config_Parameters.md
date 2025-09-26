@@ -86,6 +86,8 @@ Table of content
 
 ## AUDIBLECLI_PROFILE
 
+<!-- string -->
+
 This variable holds the profile name created with `audible-cli`.
 It should match one of the existing JSON file in `~/audible/`
 
@@ -93,6 +95,8 @@ It should match one of the existing JSON file in `~/audible/`
 > `AUDIBLECLI_PROFILE=myprofile`
 
 ## HIST_LIB_DIR
+
+<!-- dirpath -->
 
 Location of the downloaded library history files. Those files are TSV files containing your entire list of Audiobooks (and Podcasts) and delta TSV files.
 
@@ -110,6 +114,8 @@ Location of the downloaded library history files. Those files are TSV files cont
 
 ## HIST_FULL_LIB
 
+<!-- list['true', 'false'] -->
+
 This flag allows to download the full history TSV file of your Audible library each time the script is run.
 If you run the script every day I recommend disabling it. If you run every week or month then you can keep it to 'true'.
 
@@ -125,6 +131,8 @@ Allowed values:
 
 ## STATUS_FILE
 
+<!-- filepath -->
+
 This is the full path and filename where the script stores the two last execution times.
 The next run will use the last execution time to download only new audiobooks.
 **If you want to force a full sync, delete the file and run again.**
@@ -139,12 +147,16 @@ The status file stores the complete date of the script's last execution (the dat
 
 ## LOCAL_DB
 
+<!-- filepath -->
+
 This is the file location where is stored all information about the audiobooks moved to your personal library.
 
 > **Example config:**  
 > `LOCAL_DB=$HOME/Audible/personal_library.tsv`
 
 ## SKIP_IFIN_LOCAL_DB
+
+<!-- list['true', 'false'] -->
 
 This flag tells the script to skip any kind of processing (download / metadata / conversion & file move) if the Audiobook is found in personal library.
 
@@ -154,6 +166,8 @@ This flag tells the script to skip any kind of processing (download / metadata /
 # Download settings
 
 ## DOWNLOAD_PDF
+
+<!-- list['true', 'false'] -->
 
 This flag allows downloading companion PDF file for each audiobook (if there is any).
 
@@ -166,6 +180,8 @@ Allowed values:
 
 ## DOWNLOAD_ANNOT
 
+<!-- list['true', 'false'] -->
+
 This flag allows downloading annotations (bookmarks) for each audiobook (if there is any).
 
 Allowed values:  
@@ -176,6 +192,8 @@ Allowed values:
 > `DOWNLOAD_ANNOT=true`
 
 ## DOWNLOAD_COVERS
+
+<!-- list['true', 'false'] -->
 
 This flag allows downloading art covers for each audiobook.
 
@@ -188,6 +206,8 @@ Allowed values:
 
 ## DOWNLOAD_COVERS_SIZE
 
+<!-- mlist[252, 315, 360, 408, 500, 558, 570, 882, 900, 1215] -->
+
 This parameter allows to specify the cover sizes to download for each audiobook. Multiple values are allowed.
 500 seems the default size for every Audible audiobooks.
 
@@ -198,6 +218,8 @@ Allowed values, any mix of the following:
 > `DOWNLOAD_COVERS_SIZE=(500 1215)`
 
 ## DOWNLOAD_WISHLIST
+
+<!-- list['false', 'true'] -->
 
 This flag allows to download your Audible account wishlist.
 
@@ -210,6 +232,8 @@ Allowed values:
 
 ## DOWNLOAD_JOBS
 
+<!-- integer -->
+
 This setting is the concurrency level during Audiobook download. At this moment it doesn't do much because all audiobooks are not downloaded in parallel because of an issue with `audible-cli` (<https://github.com/mkb79/audible-cli/issues/218>)
 
 It sets the parallel level inside `audible-cli` (for example it parallelizes download of covers, AXX, annotations for a single audiobook).
@@ -219,6 +243,8 @@ It sets the parallel level inside `audible-cli` (for example it parallelizes dow
 
 ## DOWNLOAD_RETRIES
 
+<!-- integer -->
+
 Numbers of retries if a download fails.
 Careful of not hammering Amazon servers by keeping this setting low as there is no cooldown in the script.
 
@@ -226,6 +252,8 @@ Careful of not hammering Amazon servers by keeping this setting low as there is 
 > `DOWNLOAD_RETRIES=3`
 
 ## DOWNLOAD_DIR
+
+<!-- dirpath -->
 
 AAX & AAXC Audible files will be downloaded here
 
@@ -237,6 +265,8 @@ AAX & AAXC Audible files will be downloaded here
 
 ## DOWNLOAD_CLEAN_EMPTY_DIRS
 
+<!-- list['true', 'false'] -->
+
 Tells the script to clean all empty download directories if any. This is pretty useful if you run the script daily and do not want to keep the empty directories.
 
 Allowed values:  
@@ -247,6 +277,8 @@ Allowed values:
 > `DOWNLOAD_CLEAN_EMPTY_DIRS=true`
 
 ## DOWNLOAD_AAX_OPTS
+
+<!-- list['--aax-fallback', '--aax', '--aaxc'] -->
 
 This setting allow to force the download option during audiobook download.
 
@@ -264,6 +296,8 @@ Allowed values:
 
 ## METADATA_PARALLEL
 
+<!-- integer -->
+
 Parallelization setting for metadata processing. This parameter allows the user to specify the number of jobs for metadata extraction.
 
 Allowed values: any number >= 1
@@ -272,6 +306,8 @@ Allowed values: any number >= 1
 > `METADATA_PARALLEL=3`
 
 ## METADATA_SOURCE
+
+<!-- list['all', 'aax'] -->
 
 This setting allow to specify the source of metadata. It can be `aax`, meaning that only metadata from AAX/AAXC files will be considered, or `all` which means metadata will be fetched from original AAX/AAXC files, but also from `mediainfo` tool extraction, and finally also from library file.
 
@@ -283,6 +319,8 @@ Allowed values:
 > `METADATA_SOURCE=all`
 
 ## METADATA_TIKA
+
+<!-- string -->
 
 Use Tika for language detection if title description/comments is long enough.
 
@@ -302,6 +340,8 @@ Allowed values:
 
 ## METADATA_CLEAN_AUTHOR_PATTERN
 
+<!-- regex['traducteur|traductrice|editeur|editrice|editor|illustrateur|éditeur|éditrice'] -->
+
 I noticed that author/narrators metadata was not always clean, so I added a pattern matching. If you want to remove all authors that match this regex, set it here.  
 The script first split author between ',' and then remove all authors that match this regex (*this is a non-case-sensitive regex match*).  
 Basically any authors/narrators matching any of the regex words will be removed from the list.
@@ -315,6 +355,8 @@ Allowed values: regex string
 > `METADATA_CLEAN_AUTHOR_PATTERN='traducteur|traductrice|editeur|editrice|editor|illustrateur|éditeur|éditrice'`
 
 ## METADATA_SINGLENAME_AUTHORS
+
+<!-- list['false', 'true'] -->
 
 If an audiobook has multiple authors, this flag allows the script to discard all authors that are identified by a single word name (like pseudo/nicknames/etc.).  
 This setting is ignored if there is only a single author.  
@@ -331,6 +373,8 @@ Allowed values:
 
 ## METADATA_SKIP_IFEXISTS
 
+<!-- list['false', 'true'] -->
+
 This flag allows the script to skip current metadata processing if the final metadata final is already present.
 
 Allowed values:  
@@ -341,6 +385,8 @@ Allowed values:
 > `METADATA_SKIP_IFEXISTS=false`
 
 ## METADATA_CHAPTERS
+
+<!-- list['rebuild', 'keep', 'updatetitles'] -->
 
 Behavior of the script while processing audiobook chapters.
 
@@ -356,6 +402,8 @@ Possible values are:
 
 ## CONVERT_CONTAINER
 
+<!-- list['OGG', 'MP4'] -->
+
 This parameter allows the user to select the output format of the converted audiobooks.
 
 Allowed values:  
@@ -367,6 +415,8 @@ Allowed values:
 
 ## CONVERT_BITRATE
 
+<!-- list['128k', '96k', '64k', '32k'] -->
+
 This parameter sets the target bit rate of the converted file.
 Lower bit rates mean smaller sizes but also lower quality.
 
@@ -377,7 +427,10 @@ Allowed values: any string that can be parsed by `ffmpeg` (ex: 96k, 128k, etc.)
 
 ## CONVERT_BITRATE_RATIO
 
-This setting delegates to the script the calculation of the target bitrates of all converted files.
+<!-- ratio -->
+
+This setting delegates to the script the calculation of the target bitrates of all converted files.  
+Using this setting will disable [CONVERT_BITRATE](#convert_bitrate).
 
 Allowed values:  
 - 'false' => disable this feature and use only fixed bitrate
@@ -387,6 +440,8 @@ Allowed values:
 > `CONVERT_BITRATE_RATIO=2/3`
 
 ## CONVERT_CBRVBR
+
+<!-- list{ 'ref': 'CONVERT_CONTAINER', 'OGG': ['vbr', 'cbr'], 'MP4': ['cbr', '2', '1.8', '1.6', '1.4', '1.2', '1', '0.8', '0.6', '0.4', '0.2']} -->
 
 This parameter allows the user to select VBR or CBR for the final encoding.
 OGG and MP4 containers accepts different values.
@@ -413,6 +468,8 @@ For MP4 container:
 
 ## CONVERT_PARALLEL
 
+<!-- integer -->
+
 Parallelization setting for file conversion. This parameter allows the user to specify the number of jobs for audiobook conversion.
 This is entirely independent of METADATA_PARALLEL.
 
@@ -424,6 +481,8 @@ Allowed values: any number >= 1
 > `CONVERT_PARALLEL=3`
 
 ## CONVERT_SKIP_IFOGAEXISTS
+
+<!-- list['false', 'true'] -->
 
 If an audiobook was previously converted to OGA but not moved to target library, it may be still present in download directory, this flag tells the script to skip conversion of such Audiobooks.  
 This setting is only valid when you select OGG as container.
@@ -437,6 +496,8 @@ Allowed values:
 
 ## CONVERT_SKIP_IFM4BEXISTS
 
+<!-- list['false', 'true'] -->
+
 If an audiobook was previously converted to M4B but not moved to target library, it may be still present in download directory, this flag tells the script to skip conversion of such Audiobooks.  
 This setting is only valid when you select MP4 as container.
 
@@ -449,6 +510,8 @@ Allowed values:
 
 ## CONVERT_DECRYPTONLY
 
+<!-- list['false', 'true'] -->
+
 This flag allows only decrypt AAX/AAXC when using MP4 container, it also overrides all bitrate options.
 It also requires `CONVERT_CONTAINER=MP4`.
 
@@ -460,6 +523,8 @@ Allowed values:
 > `CONVERT_DECRYPTONLY=false`
 
 ## CONVERT_DECRYPTONLY_WITHMETA
+
+<!-- list['true', 'false'] -->
 
 When using CONVERT_DECRYPTONLY option, this parameter tells the script to add full metadata in the decrypted file.
 
@@ -517,6 +582,8 @@ In short the script will produce dynamic directory names based on metadata and a
 
 ## DEST_BASE_DIR
 
+<!-- dirpath -->
+
 Base directory for converted files (will be created if it doesn't exist).
 If you want your converted files in a different location, change this setting.
 
@@ -527,6 +594,8 @@ If you want your converted files in a different location, change this setting.
 > This setting is ignored when using the container. You MUST use volume mapping instead.
 
 ## DEST_DIR_NAMING_SCHEME_AUDIOBOOK
+
+<!-- string -->
 
 Directory path for audiobooks, it will be created under [DEST_BASE_DIR](#dest_base_dir).
 
@@ -544,6 +613,8 @@ Allowed values:
 > `DEST_DIR_NAMING_SCHEME_AUDIOBOOK=(artist series)`
 
 ## DEST_BOOKDIR_NAMING_SCHEME_AUDIOBOOK
+
+<!-- string -->
 
 Audiobook DIRECTORY naming scheme (**cannot be empty**).
 
@@ -564,6 +635,8 @@ Allowed values:
 
 ## DEST_BOOK_NAMING_SCHEME_AUDIOBOOK
 
+<!-- string -->
+
 Audiobook FILE naming scheme (**cannot be empty**).
 
 Use `"%string"` to insert custom text in the file name example: `(series-part "% - " title)`.
@@ -579,6 +652,8 @@ Allowed values:
 
 ## DEST_DIR_OVERWRITE
 
+<!-- list['true', 'remove', 'keep', 'false'] -->
+
 Destination directory overwrite mode (**cannot be empty**)
 
 Allowed values:  
@@ -591,6 +666,8 @@ Allowed values:
 > `DEST_DIR_OVERWRITE=true`
 
 ## DEST_COPY_COVER
+
+<!-- list['true', 'false'] -->
 
 This flag allows the user to specify if cover image should be copied to audiobook destination directory.
 If the flag is set then a copy of the largest cover will be created in the audiobook destination directory.
@@ -605,6 +682,8 @@ Allowed values:
 
 ## DEST_COPY_PDF
 
+<!-- list['true', 'false'] -->
+
 This flag allows the user to specify if PDF should be copied to audiobook destination directory.
 Does nothing if no PDF exists.
 
@@ -616,6 +695,8 @@ Allowed values:
 > `DEST_COPY_PDF=true`
 
 ## DEST_COPY_CHAPTERS_FILE
+
+<!-- list['true', 'false'] -->
 
 This flag allows the user to specify if JSON chapters file should be copied to audiobook destination directory.
 Does nothing if no PDF exists.
@@ -629,6 +710,8 @@ Allowed values:
 
 ## DEST_COPY_ANNOT_FILE
 
+<!-- list['true', 'false'] -->
+
 This flag allows the user to specify if JSON annotations/bookmarks file should be copied to audiobook destination directory.
 Does nothing if no PDF exists.
 
@@ -641,6 +724,8 @@ Allowed values:
 
 ## CLEAN_TMPLOGS
 
+<!-- list['true', 'false'] -->
+
 Delete logs generated during the current run (old ones are kept)
 It is safe to keep to 'true'
 
@@ -652,6 +737,8 @@ Allowed values:
 > `CLEAN_TMPLOGS=true`
 
 ## KEEP_DOWNLOADS
+
+<!-- list['true', 'false'] -->
 
 This flag allows the script to delete downloaded files once they are converted and pushed to final target directory.
 
@@ -674,6 +761,8 @@ Keep all settings below to `false` for normal behavior.
 
 ### DEBUG
 
+<!-- list['false', 'true'] -->
+
 Global debug flag, also change behavior while moving files to target directory, instead files are copied.
 
 Allowed values:  
@@ -685,6 +774,8 @@ Allowed values:
 
 ### DEBUG_REPEAT_LAST_RUN
 
+<!-- list['false', 'true'] -->
+
 This flag is used to repeat the last run without updating the [STATUS_FILE](#status_file).
 
 Allowed values:  
@@ -694,7 +785,9 @@ Allowed values:
 > **Example config:**  
 > `DEBUG_REPEAT_LAST_RUN=false`
 
-### DEBUG_DONT_UPDATE_LASTRUN
+### DEBUG_DONT_UPDATE_LASTRUN
+
+<!-- list['false', 'true'] -->
 
 Flag to tell if the script should update the [STATUS_FILE](#status_file).
 This is handy if you want to run a script multiple times for debugging purposes.
@@ -707,6 +800,8 @@ Allowed values:
 > `DEBUG_DONT_UPDATE_LASTRUN=false`
 
 ### DEBUG_STEP
+
+<!-- string -->
 
 When DEBUG is enabled and STATUS_FILE contains an old date, this setting only increments the STATUS_FILE date with the specified period of time.
 This allows manual stepped runs over specified time periods.
@@ -723,6 +818,8 @@ Allowed values:
 
 ### DEBUG_SKIPDOWNLOADS
 
+<!-- list['false', 'true'] -->
+
 This flag disables all Audible downloads for the current run.
 If other parts of the scripts are enabled then the scripts expect to find the correct download folder with all the required files in it.
 
@@ -734,6 +831,8 @@ Allowed values:
 > `DEBUG_SKIPDOWNLOADS=false`
 
 ### DEBUG_SKIPBOOKCONVERT
+
+<!-- list['false', 'true'] -->
 
 This flag disables all audiobook conversions for the current run.
 If other parts of the scripts are enabled then the scripts expect to find the correct download folder with all the required files in it.
@@ -747,6 +846,8 @@ Allowed values:
 
 ### DEBUG_SKIPBOOKMETADATA
 
+<!-- list['false', 'true'] -->
+
 This flag disables all audiobook metadata gathering for the current run.
 If other parts of the scripts are enabled then the scripts expect to find the correct download folder with all the required files in it.
 
@@ -759,6 +860,8 @@ Allowed values:
 
 ### DEBUG_SKIPMOVEBOOKS
 
+<!-- list['false', 'true'] -->
+
 This flag disables the last part of the script and no file will be moved to destination directory for the current run.
 
 Allowed values:  
@@ -769,6 +872,8 @@ Allowed values:
 > `DEBUG_SKIPMOVEBOOKS=false`
 
 ### DEBUG_DONTEMBEDCOVER
+
+<!-- list['false', 'true'] -->
 
 This flag, if enabled, prevents the art cover file to be embedded in the converted audiobook.
 It does not prevent the copy of the cover JPG file into destination directory (use this instead [DEST_COPY_COVER](#dest_copy_cover)).
@@ -781,6 +886,8 @@ Allowed values:
 > `DEBUG_DONTEMBEDCOVER=false`
 
 ### DEBUG_METADATA
+
+<!-- list['false', 'true'] -->
 
 This flag allows more detailed debug output of metadata to be print during script execution.
 It also allows you to create a debug file with all the metadata extracted by `ffprobe` for each converted file.
@@ -801,6 +908,8 @@ It is recommended to take the smallest AAX and the smallest AAXC files + voucher
 
 ### DEBUG_USEAAXSAMPLE
 
+<!-- filepath -->
+
 Full path and file name of the AAX sample file. The file must come from your own Audible account or the script will not be able to process it.
 
 Allowed values:  
@@ -814,6 +923,8 @@ Allowed values:
 > This setting is ignored when using the container. You MUST use volume mapping instead.
 
 ### DEBUG_USEAAXCSAMPLE
+
+<!-- filepath -->
 
 File name of the AAXC sample file. The file must come from your own Audible account or the script will not be able to process it.
 Do not forget to put aside the voucher file for it.
