@@ -265,11 +265,11 @@ The following volumes MUST be mapped to the container, if one map is missing the
 
 | Local                                     | Container                   | Type    |
 |-------------------------------------------|-----------------------------|---------|
-| [HIST_LIB_DIR](#hist_lib_dir)             | /audible_history            | dir     |
-| [STATUS_FILE](#status_file)               | /status_file                | file    |
-| [DOWNLOAD_DIR](#download_dir)             | /audible_dl                 | dir     |
-| [DEST_BASE_DIR](#dest_base_dir)           | /audiobooks_dest            | dir     |
-| [LOCAL_DB](#local_db)                     | /BALD/personal_library.tsv  | dir     |
+| [HIST_LIB_DIR](README_Config_Parameters.md#hist_lib_dir)             | /audible_history            | dir     |
+| [STATUS_FILE](README_Config_Parameters.md#status_file)               | /status_file                | file    |
+| [DOWNLOAD_DIR](README_Config_Parameters.md#download_dir)             | /audible_dl                 | dir     |
+| [DEST_BASE_DIR](README_Config_Parameters.md#dest_base_dir)           | /audiobooks_dest            | dir     |
+| [LOCAL_DB](README_Config_Parameters.md#local_db)                     | /BALD/personal_library.tsv  | dir     |
 | myconfig                                  | /BALD/myconfig              | file    |
 | tmp logs directory                        | /BALD/tmp                   | dir     |
 | audible-cli config dir                    | /root/.audible              | dir     |
@@ -280,8 +280,8 @@ Those volumes are optional, just if you want to debug the script:
 
 | Local                                         | Container             | Type    |
 |-----------------------------------------------|-----------------------|---------|
-| [DEBUG_USEAAXSAMPLE](#debug_useaaxsample)     | /BALD/sample.aax      | file    |
-| [DEBUG_USEAAXCSAMPLE](#debug_useaaxcsample)   | /BALD/sample.aaxc     | file    |
+| [DEBUG_USEAAXSAMPLE](README_Config_Parameters.md#debug_useaaxsample)     | /BALD/sample.aax      | file    |
+| [DEBUG_USEAAXCSAMPLE](README_Config_Parameters.md#debug_useaaxcsample)   | /BALD/sample.aaxc     | file    |
 | aaxc voucher file                             | /BALD/sample.voucher  | file    |
 
 ### Audible CLI initialization
