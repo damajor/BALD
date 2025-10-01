@@ -454,7 +454,7 @@ Install requirements:
 Run the editor:
 `python BALD_Config_Editor.py`
 
-## Usage from inside container
+## Usage from inside container
 
 ```
 podman run -it --rm \
