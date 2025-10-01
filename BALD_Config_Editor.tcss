@@ -1,0 +1,46 @@
+Screen {
+  align: center middle;
+  overflow-y: scroll;
+  layers: dialog error ontop;
+}
+#overlay {
+  layer: ontop;
+  width: 90%;
+  height: 90%;
+  align: center middle;
+  border: double yellow;
+  display: none;
+}
+#readme {
+  height: 100%;
+  width: 100%;
+}
+TabbedContent {
+  border: none;
+  height: 5fr
+}
+TabPane { border: round; }
+Button {
+  width: 1fr;
+  border: round grey;
+}
+.explorer_button {
+  border: none;
+}
+Settings {
+  border: round;
+  height: 5fr;
+}
+#new_val { border: blank; }
+Select { border: round yellow; }
+SelectionList { border: round yellow; }
+Input {
+  border: round yellow;
+  width: 1fr;
+}
+DirectoryTree {
+  layer: ontop;
+  align: center middle;
+  border: round yellow;
+  display: none;
+}
