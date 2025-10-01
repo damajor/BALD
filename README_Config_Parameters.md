@@ -10,6 +10,8 @@ Change the variables in the script section **User config** according to your nee
 You can avoid to change settings in the script itself by creating a file named `myconfig` and put all the settings in it. The script will load this file if it exists, otherwise it will use default values from script itself.
 `myconfig` file takes precedence over internal settings.
 
+You can also use the provided [Config Editor](README.md#config-editor) to change the settings.
+
 Table of content
 ================
 <!-- @import "[TOC]" {cmd="toc" depthFrom=1 depthTo=3 orderedList=false} -->

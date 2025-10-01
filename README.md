@@ -72,8 +72,12 @@ Table of content
         5. [Podman Quadlet (systemd integration)](#podman-quadlet-systemd-integration)
         6. [Podman Quadlet Automation](#podman-quadlet-automation)
 10. [Configuration](#configuration)
-11. [Anti-piracy notice](#anti-piracy-notice)
-12. [License](#license)
+11. [Config Editor](#config-editor)
+    1. [Preview](#preview)
+    2. [Usage after cloning repository](#usage-after-cloning-repository)
+    3. [Usage from inside container](#usage-from-inside-container)
+12. [Anti-piracy notice](#anti-piracy-notice)
+13. [License](#license)
 
 <!-- /code_chunk_output -->
 
@@ -125,6 +129,7 @@ In case of a problem please open an issue on GitHub <https://github.com/damajor/
  - container Dockerfile provided with all dependencies & external scripts (tested on Podman rootless)
  - basic statistics after each run
  - local TSV database of converted audiobooks
+ - now with a quick & dirty TUI config editor
  - and more...
 
 # For the impatient
@@ -429,8 +434,35 @@ Change the variables in the script section **User config** according to your nee
 You can avoid to change settings in the script itself by creating a file named `myconfig` and put all the settings in it. The script will load this file if it exists, otherwise it will use default values from script itself.
 `myconfig` file takes precedence over internal settings.
 
-
 **Read the full parameter settings here [README_Config_Parameters.md](README_Config_Parameters.md).**
+
+# Config Editor
+
+To change the `myconfig` settings you can also use the provided TUI configuration editor.
+
+## Preview
+
+[![Watch the video](medias/BALD_Config_Editor_preview.png)](medias/BALD_Config_Editor_preview.mp4)
+
+## Usage after cloning repository
+
+Run the following commands inside the cloned directory.
+
+Install requirements:
+`pip install -r requirements.txt`
+
+Run the editor:
+`python BALD_Config_Editor.py`
+
+## Usage from inside container
+
+```
+podman run -it --rm \
+    -e TERM=xterm-256color \
+    -e COLORTERM=truecolor \
+    -v /home/myuser/BALD/myconfig:/BALD/myconfig \
+    quay.io/damajor/bald:latest python /BALD/BALD_Config_Editor.py
+```
 
 # Anti-piracy notice
 
