@@ -314,7 +314,7 @@ This will enable systemd to start services defined for your user.
 
 Create a file `/home/YOURUSER/.config/containers/systemd/bald.container` with the content below. Update the paths and the timezone to your personal preferences.
 
-```
+```ini
 [Unit]
 Description=Podman BALD
 
@@ -347,7 +347,7 @@ For more information on Podman Quadlets <https://docs.podman.io/en/latest/markdo
 
 Create the timer file `/home/YOURUSER/.config/systemd/user/bald.timer` with the following content:
 
-```
+```ini
 [Unit]
 Description=Podman BALD timer
 RefuseManualStart=no
@@ -400,7 +400,7 @@ mkdir -p /home/YOURUSER/Audiobookshelf/podcasts
 
 Create a file `/home/YOURUSER/.config/containers/systemd/audiobookshelf.container` with the content below. Update the paths and the timezone to your personal preferences.
 
-```
+```ini
 [Unit]
 Description=Podman Audiobookshelf
 

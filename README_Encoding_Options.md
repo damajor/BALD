@@ -38,7 +38,7 @@ Check details here [Conversion Settings in README_Config_Parameters.md](README_C
 
 The following settings will produce OGA audiobooks, reducing the bitrate by a factor of 2/3 and so approximatively reducing final audiobook size by 1/3.
 
-```
+```ini
 CONVERT_CONTAINER=OGG
 CONVERT_BITRATE_RATIO=2/3
 CONVERT_CBRVBR=vbr
@@ -50,7 +50,7 @@ CONVERT_DECRYPTONLY_WITHMETA=false
 
 The following settings will produce OGA audiobooks, bitrate is fixed to 96k.
 
-```
+```ini
 CONVERT_CONTAINER=OGG
 CONVERT_BITRATE=96k
 CONVERT_BITRATE_RATIO=false
@@ -69,7 +69,7 @@ The following settings will only decrypt the original audiobook, add full metada
 
 This is the fastest conversion settings, but the resulting audiobook will have approximatively the same size as the original file.
 
-```
+```ini
 CONVERT_CONTAINER=MP4
 CONVERT_DECRYPTONLY=true
 CONVERT_DECRYPTONLY_WITHMETA=true
@@ -79,7 +79,7 @@ CONVERT_DECRYPTONLY_WITHMETA=true
 
 These settings will re-encode the original audiobook decreasing bitrate by 1/3.
 
-```
+```ini
 CONVERT_CONTAINER=MP4
 CONVERT_BITRATE_RATIO=2/3
 CONVERT_CBRVBR=cbr

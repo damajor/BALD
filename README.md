@@ -249,7 +249,7 @@ When used in containers the script makes some settings 'readonly'.
 The user MUST map specific volumes (the script will check all volumes are mapped, or it will exit).
 
 The following settings are hard coded using the script inside container:
-```
+```ini
 HIST_LIB_DIR="/audible_history"
 STATUS_FILE="/status_file"
 DOWNLOAD_DIR="/audible_dl"
@@ -306,7 +306,7 @@ For more information refers to `audible-cli` documentation here <https://github.
 ### Podman command line
 
 If you want to use the following settings with Podman:
-```
+```ini
 HIST_LIB_DIR="/home/myuser/Audible/lib_history"
 STATUS_FILE="/home/myuser/Audible/audible_last_sync"
 DOWNLOAD_DIR="/home/myuser/Audible/Downloads"
@@ -342,7 +342,7 @@ If you want to debug using sample files, just add:
 Use compose file only after you have done `audible-cli` initialization ([Help here](#audible-cli-initialization)).
 Compose file example:
 
-```
+```yaml
 services:
   BALD:
     image: quay.io/damajor/bald:latest
@@ -368,7 +368,7 @@ Below is an example systemd quadlet for an oneshot BALD service.
 
 1. Create a file `/home/YOURUSER/.config/containers/systemd/bald.container` with the content below (change the path to your local paths)
 
-```
+```ini
 [Unit]
 Description=Podman BALD
 
@@ -404,7 +404,7 @@ For scheduling synchronization of your library, create a systemd timer.
 
 1. Create the timer file `/home/YOURUSER/.config/systemd/user/bald.timer` with the following content
 
-```
+```ini
 [Unit]
 Description=Podman BALD timer
 RefuseManualStart=no
