@@ -5,6 +5,7 @@ output: pdf_document
 geometry: margin=2cm
 ---
 
+[![License badge](https://badgen.net/github/license/damajor/BALD "License badge")](https://github.com/damajor/BALD/blob/master/LICENSE)
 [![Docker Repository on Quay](https://quay.io/repository/damajor/bald/status "Docker Repository on Quay")](https://quay.io/repository/damajor/bald)
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/damajor/BALD)
 
