@@ -169,7 +169,7 @@ if [[ "$CONVERT_CONTAINER" == "MP4" ]]; then
   if command -v atomicparsley &> /dev/null || command -v AtomicParsley &> /dev/null; then
     [[ "$DEBUG" == "true" ]] && echo "=== AtomicParsley is installed."
   else
-    echo "=== ERROR: $req is not installed."
+    echo "=== ERROR: atomicparsley is not installed."
     reqs_done=false
   fi
 fi
